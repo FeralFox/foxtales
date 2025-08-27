@@ -9,6 +9,31 @@ interface IProps {
 }
 
 
+function getNavButton() {
+    // @ts-ignore
+    return document.getElementById("root").firstChild.firstChild.firstChild.firstChild.getElementsByTagName("button")[0]
+}
+
+function getBackButton() {
+    // @ts-ignore
+    return document.getElementById("root").firstChild.firstChild.firstChild.firstChild.getElementsByTagName("button")[1]
+}
+
+function getNextButton() {
+    // @ts-ignore
+    return document.getElementById("root").firstChild.firstChild.firstChild.firstChild.getElementsByTagName("button")[2]
+}
+
+
+function nextPage() {
+    getNextButton().click()
+}
+
+function previousPage() {
+    getBackButton().click()
+}
+
+
 export const Reader = (props: IProps) => {
     const [page, setPage] = useState('')
     const [chapter, setChapter] = useState('')
@@ -23,10 +48,14 @@ export const Reader = (props: IProps) => {
             // @ts-ignore
             setBookData(bd.data)
         }
-        if (!bookData) {loadBook()}
+
+        if (!bookData) {
+            loadBook()
+        }
     })
+    console.log(location)
     return (
-        <div style={{height: '100vh', display: 'flex', flexDirection: "column"}}>
+        <div style={{position: "relative", height: '100vh', display: 'flex', flexDirection: "column"}}>
             <div style={{width: "100vw", height: "100%"}}>
                 <ReactReader
                     url={bookData}
@@ -50,13 +79,33 @@ export const Reader = (props: IProps) => {
                     }}
                 />
             </div>
-            <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px"}}>
+            <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px 10px",
+                color: "#0009",
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                zIndex: 1,
+                boxSizing: "border-box",
+                width: "100vw"
+            }}>
                 <div style={{
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                 }}>{chapter}</div>
                 <div style={{textAlign: "right"}}>{page}</div>
+            </div>
+            <div style={{zIndex: 99, position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr 1fr"}}>
+                <div onClick={nextPage}></div>
+                <div></div>
+                <div onClick={previousPage}></div>
+                <div onClick={previousPage}></div>
+                <div></div>
+                <div onClick={nextPage}></div>
+                <div onClick={previousPage}></div>
+                <div></div>
+                <div onClick={nextPage}></div>
             </div>
         </div>
     )
