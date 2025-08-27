@@ -9,7 +9,7 @@ export const App = () => {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Library />} />
-                <Route path="/book" element={<Reader file="file" />} />
+                <Route path="/book" element={<Reader bookId="one" />} />
             </Routes>
         </BrowserRouter>
     )

@@ -1,24 +1,35 @@
-import React, {useRef, useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import {ReactReader} from 'react-reader'
 import type {NavItem, Rendition} from 'epubjs'
+import {loadFromIndexedDB} from "./dbaccess";
 
 
 interface IProps {
-    file: string
+    bookId: string
 }
 
 
 export const Reader = (props: IProps) => {
     const [page, setPage] = useState('')
     const [chapter, setChapter] = useState('')
+    const [bookData, setBookData] = useState("")
     const [location, setLocation] = useState<string | number>(0)
     const rendition = useRef<Rendition | undefined>(undefined)
     const toc = useRef<NavItem[]>([])
+    useEffect(() => {
+        async function loadBook() {
+            // @ts-ignore
+            const bd = await loadFromIndexedDB("books", props.bookId)
+            // @ts-ignore
+            setBookData(bd.data)
+        }
+        if (!bookData) {loadBook()}
+    })
     return (
         <div style={{height: '100vh', display: 'flex', flexDirection: "column"}}>
             <div style={{width: "100vw", height: "100%"}}>
                 <ReactReader
-                    url={localStorage[props.file].replace('data:application/epub+zip;base64,', '')}
+                    url={bookData}
                     location={location}
                     epubInitOptions={{encoding: "base64"}}
                     tocChanged={(_toc) => (toc.current = _toc)}
@@ -40,7 +51,11 @@ export const Reader = (props: IProps) => {
                 />
             </div>
             <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px"}}>
-                <div>{chapter}</div>
+                <div style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                }}>{chapter}</div>
                 <div style={{textAlign: "right"}}>{page}</div>
             </div>
         </div>
