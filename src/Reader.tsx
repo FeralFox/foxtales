@@ -1,102 +1,81 @@
 import React, {useEffect, useRef, useState} from 'react'
 import {ReactReader} from 'react-reader'
 import type {NavItem, Rendition} from 'epubjs'
-import {loadFromIndexedDB} from "./dbaccess";
+import {loadFromIndexedDB, saveToIndexedDB} from "./dbaccess";
 
 
-interface IProps {
-    bookId: string
-}
-
-
-function getNavButton() {
-    // @ts-ignore
-    return document.getElementById("root").firstChild.firstChild.firstChild.firstChild.getElementsByTagName("button")[0]
-}
-
-function getBackButton() {
-    // @ts-ignore
-    return document.getElementById("root").firstChild.firstChild.firstChild.firstChild.getElementsByTagName("button")[1]
-}
-
-function getNextButton() {
-    // @ts-ignore
-    return document.getElementById("root").firstChild.firstChild.firstChild.firstChild.getElementsByTagName("button")[2]
-}
-
-
-function nextPage() {
-    getNextButton().click()
-}
-
-function previousPage() {
-    getBackButton().click()
-}
-
-
-export const Reader = (props: IProps) => {
-    const [page, setPage] = useState('')
-    const [chapter, setChapter] = useState('')
-    const [bookData, setBookData] = useState("")
-    const [location, setLocation] = useState<string | number>(0)
-    const rendition = useRef<Rendition | undefined>(undefined)
-    const toc = useRef<NavItem[]>([])
+export const Reader = () => {
+    const [bookData, setBookData] = useState({})
+    const [pageData, setPageData] = useState("")
+    const [location, setLocation] = useState([-1, 0])
     useEffect(() => {
+        const bookId = window.location.hash.substring(4)
         async function loadBook() {
             // @ts-ignore
-            const bd = await loadFromIndexedDB("books", props.bookId)
+            const bd = await loadFromIndexedDB("books", "books", bookId)
             // @ts-ignore
-            setBookData(bd.data)
+            setBookData(bd)
+            // @ts-ignore
+            setLocation([bd.data.progress.chapter, bd.data.progress.position])
         }
 
-        if (!bookData) {
+        if (Object.keys(bookData).length === 0) {
             loadBook()
         }
-    })
-    console.log(location)
+    }, [])
+
+    useEffect(() => {
+        async function loadPosition() {
+            // @ts-ignore
+            const first_page_id = bookData.data.chapters[location[0]].identifier
+            // @ts-ignore
+            const first_page = await loadFromIndexedDB(`book_${bookData.data.identifier}`, "data", first_page_id)
+            // @ts-ignore
+            setPageData(first_page.data)
+            const newearr = {...bookData}
+            // @ts-ignore
+            newearr.data.progress = {chapter: location[0], position: location[1], lastUpdated: Math.floor(Date.now() / 1000)}
+            setBookData(newearr)
+            await saveToIndexedDB("books", "books", newearr)
+        }
+        if (location[0] != -1) {loadPosition()}
+    }, [location])
+
+    function nextPage() {
+        // @ts-ignore
+        if (location[0] === bookData.data.chapters.length - 1) {
+            return
+        }
+        setLocation([location[0] + 1, 0])
+    }
+
+    function previousPage() {
+        // @ts-ignore
+        if (location[0] === 0) {return}
+        // @ts-ignore
+        setLocation([location[0] - 1, 0])
+    }
+
     return (
         <div style={{position: "relative", height: '100vh', display: 'flex', flexDirection: "column"}}>
-            <div style={{width: "100vw", height: "100%"}}>
-                <ReactReader
-                    url={bookData}
-                    location={location}
-                    epubInitOptions={{encoding: "base64"}}
-                    tocChanged={(_toc) => (toc.current = _toc)}
-                    locationChanged={(loc: string) => {
-                        setLocation(loc)
-                        if (rendition.current && toc.current) {
-                            const {displayed, href} = rendition.current.location.start
-                            const chapter_ = toc.current.find((item) => item.href.startsWith(href))
-                            console.log(chapter_, toc.current, href)
-                            setPage(
-                                `${displayed.page} of ${displayed.total}`
-                            )
-                            setChapter(chapter_?.label || "")
-                        }
-                    }}
-                    getRendition={(_rendition: Rendition) => {
-                        rendition.current = _rendition
-                    }}
-                />
-            </div>
+            <img src={`data:image/png;base64,${pageData}` || undefined}
+                 style={{
+                     width: "100%",
+                     height: "100%",
+                     objectFit: "contain"
+                 }}/>
+
             <div style={{
-                display: "grid", gridTemplateColumns: "1fr 1fr", padding: "5px 10px",
-                color: "#0009",
+                zIndex: 99,
                 position: "absolute",
-                bottom: 0,
+                top: 0,
                 left: 0,
-                zIndex: 1,
-                boxSizing: "border-box",
-                width: "100vw"
+                width: "100%",
+                height: "100%",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gridTemplateRows: "1fr 1fr 1fr"
             }}>
-                <div style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                }}>{chapter}</div>
-                <div style={{textAlign: "right"}}>{page}</div>
-            </div>
-            <div style={{zIndex: 99, position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr 1fr"}}>
                 <div onClick={nextPage}></div>
                 <div></div>
                 <div onClick={previousPage}></div>

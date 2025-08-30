@@ -34,8 +34,42 @@ function deleteFromIndexedDB(storeName: string, identifier: string){
 }
 
 
+function getValuesFromIndexedDB(storeName: string, tableName: string){
+    return new Promise(
+        function(resolve, reject) {
+            var dbRequest = indexedDB.open(storeName);
 
-function loadFromIndexedDB(storeName: string, id: string, defaultvalue?: any){
+            dbRequest.onerror = function(event: any) {
+                reject(Error("Error text"));
+            };
+
+            dbRequest.onupgradeneeded = function(event: any) {
+                // Objectstore does not exist. Nothing to load
+                event.target.transaction.abort();
+                reject(Error('Not found'));
+            };
+
+            dbRequest.onsuccess = function(event: any) {
+                var database      = event.target.result;
+                var transaction   = database.transaction([tableName]);
+                var objectStore   = transaction.objectStore(tableName);
+                var objectRequest = objectStore.getAll();
+
+                objectRequest.onerror = function(event: any) {
+                    reject(Error('Error text'));
+                };
+
+                objectRequest.onsuccess = function(event: any) {
+                    if (objectRequest.result) resolve(objectRequest.result);
+                    else reject(Error('object not found'));
+                };
+            };
+        }
+    );
+}
+
+
+function loadFromIndexedDB(storeName: string, tableName: string, id: string, defaultvalue?: any){
     return new Promise(
         function(resolve, reject) {
             var dbRequest = indexedDB.open(storeName);
@@ -55,8 +89,8 @@ function loadFromIndexedDB(storeName: string, id: string, defaultvalue?: any){
 
             dbRequest.onsuccess = function(event: any) {
                 var database      = event.target.result;
-                var transaction   = database.transaction([storeName]);
-                var objectStore   = transaction.objectStore(storeName);
+                var transaction   = database.transaction([tableName]);
+                var objectStore   = transaction.objectStore(tableName);
                 var objectRequest = objectStore.get(id);
 
                 objectRequest.onerror = function(event: any) {
@@ -77,7 +111,7 @@ function loadFromIndexedDB(storeName: string, id: string, defaultvalue?: any){
 }
 
 
-function saveToIndexedDB(storeName: string, object: any){
+function saveToIndexedDB(storeName: string, tableName: string, object: any){
     return new Promise(
         function(resolve, reject) {
             if (object.id === undefined) reject(Error('object has no id.'));
@@ -89,13 +123,13 @@ function saveToIndexedDB(storeName: string, object: any){
 
             dbRequest.onupgradeneeded = function(event: any) {
                 var database    = event.target.result;
-                var objectStore = database.createObjectStore(storeName, {keyPath: "id"});
+                var objectStore = database.createObjectStore(tableName, {keyPath: "id"});
             };
 
             dbRequest.onsuccess = function(event: any) {
                 var database      = event.target.result;
-                var transaction   = database.transaction([storeName], 'readwrite');
-                var objectStore   = transaction.objectStore(storeName);
+                var transaction   = database.transaction([tableName], 'readwrite');
+                var objectStore   = transaction.objectStore(tableName);
                 var objectRequest = objectStore.put(object); // Overwrite if exists
 
                 objectRequest.onerror = function(event: any) {
@@ -111,4 +145,4 @@ function saveToIndexedDB(storeName: string, object: any){
 }
 
 
-export {saveToIndexedDB, deleteFromIndexedDB, loadFromIndexedDB}
+export {saveToIndexedDB, deleteFromIndexedDB, loadFromIndexedDB, getValuesFromIndexedDB}

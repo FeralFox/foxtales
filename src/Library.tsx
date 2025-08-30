@@ -1,36 +1,76 @@
-import React, {useRef, useState} from 'react'
-import {ReactReader} from 'react-reader'
-import type {NavItem, Rendition} from 'epubjs'
+import React, {useEffect, useRef, useState} from 'react'
 import {saveToIndexedDB} from "./dbaccess";
 
 
+const URL="http://192.168.178.21"
+
+
+async function fetchAsync (url: string) {
+    let response = await fetch(url);
+    return await response.json();
+}
+
+
 export const Library = () => {
-    function gotPhoto(element: any) {
+    const [books, setBooks] = useState([])
+    let initialized = false
+    async function uploadFile(element: any) {
         var file = element.target.files[0];
-        var reader = new FileReader()
-        reader.onload = async function (base64) {
-            await saveToIndexedDB("books", {
-                "id": "one",
-                // @ts-ignore
-                "data": base64.target?.result?.replace('data:application/epub+zip;base64,', '')})
+
+        var formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${URL}:8000/add_book`, {
+            method: 'POST',
+            body: formData,
+            // Headers are automatically set by browser for FormData
+        });
+        loadBooks()
+    }
+
+    async function downloadBook(identifier: string) {
+        const fetchedBooks = await fetchAsync(`${URL}:8000/get_book_content?identifier=${identifier}`);
+        const bookMetaData = await fetchAsync(`${URL}:8000/get_book?identifier=${identifier}`);
+        const cover = await fetchAsync(`${URL}:8000/get_cover_b64?identifier=${identifier}`);
+        await saveToIndexedDB(
+            `books`,
+            "books",
+            {id: identifier,
+             data: bookMetaData,
+             cover: cover.cover}
+        )
+        
+        await saveToIndexedDB(`book_${identifier}`, "data", {id: "cover", data: cover})
+        for (let chapterId of Object.keys(fetchedBooks)) {
+            const bookData = fetchedBooks[chapterId];
+            await saveToIndexedDB(`book_${identifier}`, "data", {id: chapterId, data: bookData})
         }
-        reader.readAsDataURL(file);
+    }
+    async function loadBooks() {
+        const fetchedBooks = await fetchAsync(`${URL}:8000/list_books`)
+        console.log(fetchedBooks)
+        setBooks(fetchedBooks)
     }
 
-    function doFullscreen() {
-        document.getElementsByTagName("body")[0].requestFullscreen()
-    }
+    useEffect(() => {
+        if (!initialized) {
+            initialized=true;
+            loadBooks();
+        }
+    }, [])
 
+    // @ts-ignore
+    const k = books.map(book => <div key={book.identifier}><span>{book.title}<button onClick={() => downloadBook(book.identifier)}>Download</button></span></div>);
     // Saved to localstorage
     return (
         <div>
             <div>
-                Library
+                <a href={"/"}>Offline Library</a>
+                <a href={"/library"}>Library</a>
             </div>
-            <input type="file" accept="image/*;capture=camera" onChange={gotPhoto}/>
+            <input type="file" accept="*" onChange={uploadFile}/>
             <div>
-                <a href="/book">Book 1</a>
-                <button onClick={doFullscreen}>Fullscreen</button>
+                {k}
+                <br/>
             </div>
         </div>
     )
