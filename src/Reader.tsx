@@ -1,92 +1,69 @@
-import React, {useEffect, useRef, useState} from 'react'
-import {ReactReader} from 'react-reader'
-import type {NavItem, Rendition} from 'epubjs'
-import {loadFromIndexedDB, saveToIndexedDB} from "./dbaccess";
+import { useState } from 'react';
+import {
+    Reader,
+    ReaderContent,
+    ReaderNext,
+    ReaderPrevious,
+    loadEPUB, loadComicBook
+} from './react-ebook';
 
 
-export const Reader = () => {
-    const [bookData, setBookData] = useState({})
-    const [pageData, setPageData] = useState("")
-    const [location, setLocation] = useState([-1, 0])
-    useEffect(() => {
-        const bookId = window.location.hash.substring(4)
-        async function loadBook() {
+function EbookReader() {
+    const [book, setBook] = useState(null);
+    const [progress, setProgress] = useState(0);
+
+    const handleFileChange = async (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+            let loadedEbook;
+            if (file.name.toLowerCase().endsWith(".epub")) {
+                loadedEbook = await loadEPUB(file)
+            } else if (file.name.toLowerCase().endsWith(".cbz")) {
+                loadedEbook = await loadComicBook(file);
+            };
             // @ts-ignore
-            const bd = await loadFromIndexedDB("books", "books", bookId)
-            // @ts-ignore
-            setBookData(bd)
-            // @ts-ignore
-            setLocation([bd.data.progress.chapter, bd.data.progress.position])
+            setBook(loadedEbook);
+            setProgress(0)
         }
+    };
 
-        if (Object.keys(bookData).length === 0) {
-            loadBook()
-        }
-    }, [])
-
-    useEffect(() => {
-        async function loadPosition() {
-            // @ts-ignore
-            const first_page_id = bookData.data.chapters[location[0]].identifier
-            // @ts-ignore
-            const first_page = await loadFromIndexedDB(`book_${bookData.data.identifier}`, "data", first_page_id)
-            // @ts-ignore
-            setPageData(first_page.data)
-            const newearr = {...bookData}
-            // @ts-ignore
-            newearr.data.progress = {chapter: location[0], position: location[1], lastUpdated: Math.floor(Date.now() / 1000)}
-            setBookData(newearr)
-            await saveToIndexedDB("books", "books", newearr)
-        }
-        if (location[0] != -1) {loadPosition()}
-    }, [location])
-
-    function nextPage() {
-        // @ts-ignore
-        if (location[0] === bookData.data.chapters.length - 1) {
-            return
-        }
-        setLocation([location[0] + 1, 0])
+    if (!book) {
+        return (
+            <div>
+                <h2>Select an ebook to read</h2>
+                <input type="file" accept=".epub,.pdf,.cbz" onChange={handleFileChange} />
+            </div>
+        );
     }
 
-    function previousPage() {
-        // @ts-ignore
-        if (location[0] === 0) {return}
-        // @ts-ignore
-        setLocation([location[0] - 1, 0])
+    const onProgressChange = (progress: number) => {
+        setProgress(progress)
     }
 
     return (
-        <div style={{position: "relative", height: '100vh', display: 'flex', flexDirection: "column"}}>
-            <img src={`data:image/png;base64,${pageData}` || undefined}
-                 style={{
-                     width: "100%",
-                     height: "100%",
-                     objectFit: "contain"
-                 }}/>
-
-            <div style={{
-                zIndex: 99,
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gridTemplateRows: "1fr 1fr 1fr"
-            }}>
-                <div onClick={nextPage}></div>
-                <div></div>
-                <div onClick={previousPage}></div>
-                <div onClick={previousPage}></div>
-                <div></div>
-                <div onClick={nextPage}></div>
-                <div onClick={previousPage}></div>
-                <div></div>
-                <div onClick={nextPage}></div>
+        <Reader
+            book={book}
+            progress={progress}
+            onProgressChange={onProgressChange}
+        >
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <ReaderContent
+                        fontSize={16}
+                        lineSpacing={1.5}
+                        justify={true}
+                        hyphenate={true}
+                        flow="paginated"
+                    />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem' }}>
+                    <ReaderPrevious>Previous</ReaderPrevious>
+                    <div>{Math.round(progress * 100)}%</div>
+                    <ReaderNext>Next</ReaderNext>
+                </div>
             </div>
-        </div>
-    )
+        </Reader>
+    );
 }
-export default Reader
+
+export default EbookReader

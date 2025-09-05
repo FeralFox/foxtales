@@ -1,0 +1,3 @@
+[submodule "src/react-ebook/vendor/foliate-js"]
+	path = src/react-ebook/vendor/foliate-js
+	url = https://github.com/johnfactotum/foliate-js.git

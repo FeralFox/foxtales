@@ -1,6 +1,4 @@
 import React, {useEffect, useRef, useState} from 'react'
-import {ReactReader} from 'react-reader'
-import type {NavItem, Rendition} from 'epubjs'
 import {getValuesFromIndexedDB, loadFromIndexedDB, saveToIndexedDB} from "./dbaccess";
 
 
