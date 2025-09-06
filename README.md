@@ -1,46 +1,235 @@
-# Getting Started with Create React App
+# vue-book-reader - an easy way to embed a reader into your webapp
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+vue-book-reader is a vue wrapper for [foliate-js](https://github.com/johnfactotum/foliate-js) - library for rendering e-books in the browser.
+Supports EPUB, MOBI, KF8 (AZW3), FB2, CBZ, PDF (experimental; requires PDF.js), or add support for other formats yourself by implementing the book interface
 
-## Available Scripts
+## Document
 
-In the project directory, you can run:
+[document](https://jinhuan138.github.io/vue-book-reader/)
 
-### `npm start`
+## Basic usage
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```bash
+npm install vue-book-reader --save
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+And in your vue-component...
 
-### `npm test`
+```vue
+<template>
+  <div style="height: 100vh">
+    <vue-reader url="/files/啼笑因缘.epub" />
+  </div>
+</template>
+<script setup>
+import { VueReader } from 'vue-book-reader'
+</script>
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## VueReader Attributes
 
-### `npm run build`
+| **Name** | **Description**                   | **Type**               | **Default** |
+| -------- | --------------------------------- | ---------------------- | ----------- |
+| url      | book url or File                  | `string`/`File`        | —           |
+| location | set / update location of the book | `string`/`number`      | —           |
+| title    | the title of the book             | `string`               | —           |
+| showToc  | whether to show the toc           | `boolean`              | true        |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## VueReader Slots
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| **Name** | **Description**                                                                     |
+| -------- | ----------------------------------------------------------------------------------- |
+| title    | You have access to title by [slot](https://v3.vuejs.org/guide/component-slots.html) |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Recipes and tips
 
-### `npm run eject`
+## custom css
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```vue
+<template>
+  <vue-reader url="/files/梵高手稿.epub" :getRendition="getRendition">
+  </vue-reader>
+</template>
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+<script setup>
+import VueReader from 'vue-book-reader'
+import { ref } from 'vue'
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+const getCSS = (style) => [
+  `
+    html {
+      background: #000;
+      color: #fff;
+    }`,
+]
+const getRendition = async (rendition) => {
+  const { book, renderer } = rendition
+  renderer.setStyles(getCSS())
+}
+</script>
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Display a scrolled epub-view
 
-## Learn More
+```vue
+<template>
+  <div style="height: 100vh">
+    <VueReader url="/files/啼笑因缘.mobi" :getRendition="getRendition"/>
+  </div>
+</template>
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+<script setup>
+import VueReader from 'vue-book-reader'
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+const getRendition =(view)=>{
+  //scrolled or paginated
+  view?.renderer.setAttribute('flow', 'scrolled')
+}
+</script>
+```
+
+## Import file
+
+```vue
+<template>
+  <div
+    style="height: 100vh; position: relative"
+    :style="{ height: url ? '100vh' : '50px' }"
+  >
+    <vue-reader v-if="url" :url="url" />
+    <input class="input" type="file" accept=".epub,.mobi,.azw3,.FB2,.CBZ,.PDF" @change="onchange" />
+  </div>
+</template>
+
+<script setup>
+import VueReader from 'vue-book-reader'
+import { ref } from 'vue'
+
+const url = ref('')
+const onchange = (e) => {
+  const file = e.target.files[0]
+  url.value = file
+}
+</script>
+```
+
+## Current progress
+
+```vue
+<template>
+  <div style="height: 100vh; position: relative">
+    <vue-reader
+      url="/files/啼笑因缘.azw3"
+      :getRendition="getRendition"
+      @update:location="locationChange"
+    />
+    <div class="progress">
+      <input
+        type="number"
+        :value="current"
+        :min="0"
+        :max="100"
+        step="1"
+        @change="change"
+      />%
+      <input
+        type="range"
+        :value="current"
+        :min="0"
+        :max="100"
+        :step="1"
+        @change="change"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import VueReader from 'vue-book-reader'
+import { ref } from 'vue'
+
+let view = null
+const current = ref(0)
+const change = (e) => {
+  const value = e.target.value
+  current.value = value
+  view.goToFraction(parseFloat(value / 100))
+}
+const getRendition = (val) => (view = val)
+
+const locationChange = (detail) => {
+  const { fraction } = detail
+  const percent = Math.floor(fraction * 100)
+  current.value = percent
+}
+</script>
+<style>
+.progress {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  left: 1rem;
+  z-index: 1;
+  color: #000;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.progress > input[type='number'] {
+  text-align: center;
+}
+
+.progress > input[type='range'] {
+  width: 100%;
+}
+</style>
+
+```
+
+## Get book information
+
+```vue
+<template>
+  <vue-reader
+    url="/files/啼笑因缘.azw3"
+    :getRendition="getRendition"
+    v-show="false"
+  />
+  <div v-if="information" style="color: #000">
+    <img
+      :src="information.cover"
+      :alt="information.title"
+      style="width: 100px"
+    />
+    <p>标题:{{ information.title }}</p>
+    <p>作者:{{ information.author }}</p>
+    <p>出版社:{{ information.publisher }}</p>
+    <p>语言:{{ information.language }}</p>
+    <p>出版日期:{{ information.published }}</p>
+    <p>介绍:{{ information.description }}</p>
+  </div>
+</template>
+
+<script setup>
+import VueReader from 'vue-book-reader'
+import { ref } from 'vue'
+
+const information = ref(null)
+const getRendition = (rendition) => {
+  const { book } = rendition
+  const { author } = book.metadata
+  const bookAuthor =
+    typeof author === 'string'
+      ? author
+      : author
+          ?.map((author) => (typeof author === 'string' ? author : author.name))
+          ?.join(', ') ?? ''
+  information.value = { ...book.metadata, author: bookAuthor }
+  book.getCover?.().then((blob) => {
+    information.value.cover = URL.createObjectURL(blob)
+  })
+}
+</script>
+```
+

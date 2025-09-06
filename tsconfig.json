@@ -1,26 +1,37 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
+    "outDir": "lib",
+    "jsx": "preserve",
+    "declarationMap": true,
+    "inlineSources": true,
+    "declaration": true,
     "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": false,
+    "useDefineForClassFields": true,
+    "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    "esModuleInterop": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": false,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "sourceMap": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "comps/*": ["src/components/*"]
+    },
+    "lib": ["esnext", "dom"]
   },
-  "include": [
-    "src"
-  ]
+  "vueCompilerOptions": {},
+  "include": ["src/**/*.ts","src/**/*.tsx", "src/**/*.vue", "types/*.ts", "src/modules/utils/reader.js"],
+  "exclude": ["node_modules"]
 }
