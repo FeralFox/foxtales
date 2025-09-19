@@ -9,26 +9,42 @@
     line-height: 1.4;
     word-break: break-word;
   }
-  html {
-    font-size: 62.5%;
-  }
   body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    font-size: 1.8rem;
     position: absolute;
     height: 100%;
     width: 100%;
-    color: #fff;
   }
   #app {
     width: 100%;
     height: 100%;
     min-height: 100vh;
   }
+  .modal {
+      position: fixed;
+      top: 50vh;
+      left: 50vw;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 1px solid black;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 20em;
+  }
+  button {
+      min-height: 3em;
+  }
   :root {
       --border-horizontal: 10px;
-      --padding-top: 10px;
-      --padding-bottom: 10px;
+      --padding-top: 50px;
+      --padding-bottom: 30px;
+  }
+
+  .cover_thumbnail {
+
   }

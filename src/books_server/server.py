@@ -7,7 +7,7 @@ import re
 import tempfile
 import time
 import zipfile
-from typing import Literal, Optional
+from typing import Literal
 
 import PIL.Image
 import fastapi
@@ -15,6 +15,7 @@ import uuid
 from fastapi import UploadFile
 import uvicorn
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import FileResponse
 
 from books_server.constants import BOOKS_PATH
 
@@ -29,39 +30,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
 FORMATS = Literal["cbz"]
 
 
 @dataclasses.dataclass
-class Chapter:
-    identifier: str
-    title: str
-    length: int
-    file: Optional[pathlib.Path] = None
-
-    def to_dict(self):
-        return {
-            "identifier": self.identifier,
-            "title": self.title,
-            "length": self.length
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "Chapter":
-        return cls(**data)
-
-
-@dataclasses.dataclass
 class ReadingProgress:
-    chapter: int
-    position: int
+    position: float
     lastUpdated: float
 
     def to_dict(self):
         return {
-            "chapter": self.chapter,
             "position": self.position,
             "lastUpdated": self.lastUpdated
         }
@@ -75,8 +53,8 @@ class ReadingProgress:
 class BookMetaData:
     identifier: str
     title: str
-    chapters: list[Chapter]
-    format: FORMATS
+    format: str
+    mimetype: str
     progress: ReadingProgress
     version: int = 0
 
@@ -86,8 +64,8 @@ class BookMetaData:
             "identifier": self.identifier,
             "title": self.title,
             "format": self.format,
-            "chapters": [chapter.to_dict() for chapter in self.chapters],
-            "progress": self.progress.to_dict()
+            "mimetype": self.mimetype,
+            "progress": self.progress.to_dict(),
         }
 
     @classmethod
@@ -96,29 +74,83 @@ class BookMetaData:
             version=data["version"],
             identifier=data["identifier"],
             title=data["title"],
-            chapters=[Chapter.from_dict(chapter) for chapter in data["chapters"]],
             format=data["format"],
+            mimetype=data["mimetype"],
             progress=ReadingProgress.from_dict(data["progress"])
         )
 
 
 @dataclasses.dataclass
-class Base64CoverData:
-    cover: str
+class FullBookMetaData(BookMetaData):
+    cover: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "FullBookMetaData":
+        return cls(
+            version=data["version"],
+            identifier=data["identifier"],
+            title=data["title"],
+            format=data["format"],
+            mimetype=data["mimetype"],
+            progress=ReadingProgress.from_dict(data["progress"]),
+            cover=data["cover"]
+        )
 
 
-class Cbz:
-    def __init__(self, identifier: str, file_path: pathlib.Path):
-        self._file = file_path
-        self._identifier = identifier
+class BookInterface:
+    def __init__(self, file: UploadFile):
+        self._identifier = uuid.uuid4().hex
+        self._file = file
 
-    def iter_chapters(self):
+    def get_id(self):
+        return self._identifier
+
+    def get_ext(self) -> str:
+        return self._file.filename.rsplit(".", 1)[-1].lower().lstrip(".")
+
+    def get_metadata(self) -> BookMetaData:
+        return BookMetaData(identifier=self.get_id(),
+                            mimetype=self.get_mimetype(),
+                            title=self.get_title(),
+                            format=self.get_ext(),
+                            progress=ReadingProgress(
+                                0,
+                                time.time()
+                            ))
+
+    def get_mimetype(self) -> str:
+        raise NotImplementedError()
+
+    def get_title(self) -> str:
+        raise NotImplementedError()
+
+    def get_cover(self, book_file: pathlib.Path) -> bytes:
+        raise NotImplementedError()
+
+
+class Cbz(BookInterface):
+    def __init__(self, file: UploadFile):
+        super().__init__(file)
+
+    def get_mimetype(self) -> str:
+        return "application/x-cbz"
+
+    def get_title(self):
+        return self._file.filename.rsplit(".", 1)[0]
+
+    def get_cover(self, book_file: pathlib.Path) -> bytes:
+        """Retrieve the cover image."""
+        # TODO: Sort when saving using natural_sort_key
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
             pages = []
 
-            with zipfile.ZipFile(self._file, 'r') as zip_ref:
+            with zipfile.ZipFile(book_file, 'r') as zip_ref:
                 zip_ref.extractall(tmpdir_str)
+
+            for cover in the_dir.rglob("*cover*"):
+                if cover.suffix.lower() in [".png", ".jpg", ".jpeg"]:
+                    return cover.read_bytes()
 
             for file in the_dir.iterdir():
                 if file.suffix.lower() in [".png", ".jpg", ".jpeg"]:
@@ -130,32 +162,11 @@ class Cbz:
 
             pages.sort(key=natural_sort_key)
 
-            for i, page_path in enumerate(pages):
-                yield Chapter(f"{self._identifier}_{str(i).zfill(5)}",
-                              page_path.stem,
-                              1, file=page_path)
+            return pages[0].read_bytes()
 
 
-def _load_metadata_from_cbz(identifier: str, cbz_path: pathlib.Path, filename: str):
-    cbz = Cbz(identifier, file_path=cbz_path)
-
-    the_cover = b""
-    chapters = []
-    for chapter in cbz.iter_chapters():
-        if not the_cover or "cover" in chapter.title.lower():
-            the_cover = chapter.file.read_bytes()
-        chapters.append(chapter)
-
-    metadata = BookMetaData(identifier=identifier,
-                            title=filename.rsplit(".", 1)[0],
-                            format="cbz",
-                            chapters=chapters,
-                            progress=ReadingProgress(
-                                0,
-                                0,
-                                time.time()
-                            ))
-    return metadata, the_cover
+class Epub(BookInterface):
+    pass
 
 
 @app.get("/", include_in_schema=False)
@@ -165,21 +176,33 @@ def forward_to_docs():
 
 @app.post("/add_book")
 async def add_book(file: UploadFile):
-    identifier = uuid.uuid4().hex
-    book_dir = BOOKS_PATH / identifier
-    book_dir.mkdir()
-    output_file = book_dir / "book.cbz"
-    output_file.write_bytes(await file.read())
-    metadata, cover = _load_metadata_from_cbz(identifier, output_file, file.filename)
-    (book_dir / "meta.json").write_text(json.dumps(metadata.to_dict(), indent=2))
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+
+    if ext.lower() == "cbz":
+        book = Cbz(file)
+    elif ext.lower() == "epub":
+        book = Epub(file)
+    else:
+        raise NotImplementedError(f"Unknown format for {file.filename}")
+
+    ext = book.get_ext()
+    base_path = (BOOKS_PATH / book.get_id())
+    base_path.mkdir(exist_ok=True)
+    book_file = (base_path / f"book.{ext}")
+    book_file.write_bytes(await file.read())
+
+    (base_path / "meta.json").write_text(json.dumps(book.get_metadata().to_dict(), indent=2))
+
     buffer = io.BytesIO()
-    buffer.write(cover)
-    buffer.seek(0)
+    buffer.write(book.get_cover(book_file))
     img = PIL.Image.open(buffer)
     img.thumbnail((600, 400))
     buffer = io.BytesIO()
     img.save(buffer, format="jpeg", quality=80)
-    (book_dir / "cover.jpg").write_bytes(buffer.getvalue())
+    (base_path / "cover.jpg").write_bytes(buffer.getvalue())
+
+    print(f"Added new book {book.get_id(), book.get_title()}")
+    return book.get_id()
 
 
 @app.get("/list_books")
@@ -197,25 +220,24 @@ def get_cover(identifier: str):
                                       media_type="image/jpg")
 
 
-@app.get("/get_cover_b64")
-def get_cover_b64(identifier: str) -> Base64CoverData:
-    return Base64CoverData(base64.b64encode((BOOKS_PATH / identifier / "cover.jpg").read_bytes()).decode("utf-8"))
-
-
 @app.get("/get_book")
-def get_book_metadata(identifier: str) -> BookMetaData:
+def get_book_metadata(identifier: str) -> FullBookMetaData:
     data_path = BOOKS_PATH / identifier / "meta.json"
-    return BookMetaData.from_dict(json.loads((data_path).read_text()))
+    cover = BOOKS_PATH / identifier / "cover.jpg"
+    return FullBookMetaData.from_dict(
+        {
+            **json.loads((data_path).read_text()),
+            "cover": base64.b64encode(cover.read_bytes())
+        }
+    )
 
 
 @app.get("/get_book_content")
-def get_book(identifier: str):
+def get_book_content(identifier: str):
     base_path = BOOKS_PATH / identifier
-    cbz = Cbz(identifier, base_path / "book.cbz")
-    output = {}
-    for chapter in cbz.iter_chapters():
-        output[chapter.identifier] = base64.b64encode(chapter.file.read_bytes())
-    return output
+
+    book_path = next(base_path.glob("book*"))
+    return FileResponse(book_path, media_type="application/x-cbz")
 
 
-uvicorn.run(app, host="192.168.178.21")
+uvicorn.run(app, host="localhost")

@@ -1,0 +1,10 @@
+services:
+  foxtale:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    volumes:
+      - ./volume/library:/config/Calibre Library
+      - ./volume/config:/config/.config/calibre

@@ -2,6 +2,6 @@ import pathlib
 
 DATA_PATH = pathlib.Path(__file__).parent.parent.parent / "data"
 
-BOOKS_PATH = DATA_PATH / "books"
+CACHE_PATH = DATA_PATH / "cache"
 
-BOOKS_PATH.mkdir(exist_ok=True)
+CACHE_PATH.mkdir(exist_ok=True)
