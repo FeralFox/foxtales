@@ -12,7 +12,7 @@
 <script setup>
 //https://github.com/johnfactotum/foliate-js
 //https://github.com/johnfactotum/foliate
-import '../utils/foliate-js/view.js'
+import '../utils/foliatejs/view.js'
 import "core-js/proposals/array-grouping-v2"
 import {
   clickListener,
