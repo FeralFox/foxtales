@@ -1,28 +1,32 @@
 <template>
-    <Navigation/>
-    <div style="display: flex; flex-wrap: wrap;">
-      <div
-          style="padding: 5px; margin: 1rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
-        <div class="upload-book">
-          <img class="add-book-icon" src="/public/icons/education-book-add-svgrepo-com.svg" />
-          Upload Book
-          <input class="file-upload" type="file" accept="*" @change="uploadFile" />
-        </div>
-      </div>
-      <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer">
-        <BookCoverThumbnail
-            :book="book"
-            :image="`url(${URL}/get_book_cover?book_id=${book.id})`"
-        />
+  <Navigation active="library"/>
+  <div style="display: flex; flex-wrap: wrap;">
+    <div
+        style="padding: 5px; margin: 1rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
+      <div class="upload-book">
+        <IconAddBook class="add-book-icon"/>
+        Upload Book
+        <input class="file-upload" type="file" accept="*" @change="uploadFile"/>
       </div>
     </div>
+    <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer">
+      <BookCoverThumbnail
+          :book="book"
+          :image="`url(${URL}/get_book_cover?book_id=${book.id})`"
+      />
+
+    </div>
+  </div>
 </template>
 
 <style>
 .add-book-icon {
-  width: 40%;
-  padding-bottom:1rem;
+  height: 5rem;
+  width: 5rem;
+  padding-bottom: 1rem;
+  color: #777;
 }
+
 .file-upload {
   height: 100%;
   width: 100%;
@@ -32,6 +36,7 @@
   left: 0;
   cursor: pointer;
 }
+
 .upload-book {
   position: relative;
   width: 100%;
@@ -55,8 +60,9 @@ import {onMounted, ref} from 'vue'
 import {saveToIndexedDB} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
+import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
+import {URL} from "./constants"
 
-const URL = 'http://localhost:8000'
 
 async function fetchAsync(url: string) {
   const response = await fetch(url)
@@ -93,7 +99,7 @@ async function downloadBook(identifier: string) {
   const blob = await book.blob()
   const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`)
   const coverBase64 = await cover.text()
-  console.log(`Save`, identifier,  bookMetaData)
+  console.log(`Save`, identifier, bookMetaData)
   await saveToIndexedDB(
       'books',
       'books',

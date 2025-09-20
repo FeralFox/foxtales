@@ -1,5 +1,5 @@
 <template>
-    <Navigation/>
+    <Navigation active="local"/>
     <div class="modal" v-if="displayBookContextMenu">
       <div><b>{{ displayBookContextMenu.title }}</b></div>
       <button @click="deleteBook(displayBookContextMenu)">Delete from device</button>

@@ -9,9 +9,9 @@ RUN chown nightowl: -R /home/nightowl
 USER nightowl
 WORKDIR /home/nightowl
 
-COPY src/books_server/requirements.txt .
+COPY books_server/requirements.txt .
 RUN python -m venv venv
 RUN ./venv/bin/pip install -r requirements.txt
-COPY src/books_server/ .
+COPY books_server/ .
 
 CMD ["./venv/bin/python", "app.py"]

@@ -1,9 +1,10 @@
 <template>
   <div class="navigation">
-    <img alt="" class="logo" style="opacity: 1;padding-bottom:0.5rem" src="/public/logo_dark.svg"/>
+    <Logo class="logo" style="opacity: 1"/>
     <div style="width: 80%;background-color:#fff6;height:2px"/>
-    <a href="#/"><img alt="" class="logo"  src="/public/icons/books-stack-svgrepo-com.svg"/>Local</a>
-    <a href="#/lib"><img alt="" class="logo"  src="/public/icons/books-arranged-vertically-svgrepo-com.svg"/>Library</a>
+    <a :class="props.active === 'local' ? 'is-active' : ''" href="#/"><BookStackIcon class="logo" />
+      Local</a>
+    <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"><LibraryIcon class="logo"/>Library</a>
   </div>
 </template>
 <style>
@@ -21,20 +22,31 @@
 .navigation a {
   font-weight: bold;
   text-decoration: none;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px
+}
+.navigation a.is-active {
+  background-color: white;
+  color:black;
 }
 .navigation a:hover {
   background-color: #fff3
+}
+.navigation a.is-active:hover {
+  background-color: white
 }
 .logo {
   width: 3rem;
   padding: 0.5rem;
   padding-bottom: 0;
   height: 3rem;
-  opacity: 0.7;
+  opacity: 1;
 }
 </style>
-<script>
-export default {
-  name: 'Navigation'
-}
+<script setup lang="ts">
+import Logo from "../public/logo.svg"
+import BookStackIcon from "../public/icons/books-stack-svgrepo-com.svg"
+import LibraryIcon from "../public/icons/books-arranged-vertically-svgrepo-com.svg"
+
+const props = defineProps(["active"])
 </script>
