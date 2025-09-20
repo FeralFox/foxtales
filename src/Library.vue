@@ -1,11 +1,11 @@
 <template>
-  <div>
     <Navigation/>
     <div style="display: flex; flex-wrap: wrap;">
       <div
           style="padding: 5px; margin: 1rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
-        <div class="upload-book"
-        >Upload Book
+        <div class="upload-book">
+          <img class="add-book-icon" src="/public/icons/education-book-add-svgrepo-com.svg" />
+          Upload Book
           <input class="file-upload" type="file" accept="*" @change="uploadFile" />
         </div>
       </div>
@@ -16,10 +16,13 @@
         />
       </div>
     </div>
-  </div>
 </template>
 
 <style>
+.add-book-icon {
+  width: 40%;
+  padding-bottom:1rem;
+}
 .file-upload {
   height: 100%;
   width: 100%;
@@ -39,6 +42,7 @@
   color: #0009;
   display: flex;
   justify-content: center;
+  flex-direction: column;
   font-size: 140%;
   align-items: center;
   font-weight: bold;

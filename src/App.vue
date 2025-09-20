@@ -22,6 +22,14 @@ const currentView = computed(() => {
 })
 </script>
 
+<style>
+.container {
+  display: flex;
+  height: 100vh;
+}
+</style>
 <template>
-  <component :is="currentView" />
+  <div class="container">
+    <component :is="currentView" />
+  </div>
 </template>

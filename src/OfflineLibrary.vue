@@ -1,5 +1,4 @@
 <template>
-  <div>
     <Navigation/>
     <div class="modal" v-if="displayBookContextMenu">
       <div><b>{{ displayBookContextMenu.title }}</b></div>
@@ -17,8 +16,8 @@
         <BookCoverThumbnail :book="book" :image="`url(${book.cover})`"/>
       </div>
     </div>
-  </div>
 </template>
+
 
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
