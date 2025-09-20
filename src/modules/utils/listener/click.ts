@@ -10,6 +10,7 @@
  * @param {Object} rendition - EPUBJS rendition
  * @param {function} fn - The listener function.
  */
+// @ts-ignore
 import { Rendition } from 'epubjs'
 
 type epubEvent = MouseEvent & { ignore?: boolean }

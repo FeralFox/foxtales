@@ -1,7 +1,10 @@
 <template>
     <Navigation active="local"/>
     <div class="modal" v-if="displayBookContextMenu">
-      <div><b>{{ displayBookContextMenu.title }}</b></div>
+      <div><b>{{
+          // @ts-ignore
+          displayBookContextMenu.title!
+        }}</b></div>
       <button @click="deleteBook(displayBookContextMenu)">Delete from device</button>
       <button @click="closeModal">Abort</button>
     </div>
