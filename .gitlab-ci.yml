@@ -1,0 +1,29 @@
+image: node:16.13.1
+
+stages:
+  - build_frontend
+  - build_image
+
+build_frontend:
+  stage: build_frontend
+  script:
+    - CI=true npm install
+    - CI=true npm run build
+  artifacts:
+    paths:
+      - dist
+    expire_in: 1 hour
+
+build_image:
+  stage: build_image
+  services:
+    - name: docker:20.10.11-dind
+      alias: docker
+  dependencies:
+    - build_frontend  # This ensures artifacts are downloaded
+  image: docker:20.10.11
+  script:
+    - ls -la dist/  # Verify the dist folder is available
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
