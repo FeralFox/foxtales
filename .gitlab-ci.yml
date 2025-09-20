@@ -1,4 +1,4 @@
-image: node:16.13.1
+image: node:20.12.2
 
 stages:
   - build_frontend
@@ -27,3 +27,5 @@ build_image:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
+#  only:
+#    - tags
