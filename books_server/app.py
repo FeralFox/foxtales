@@ -11,7 +11,8 @@ from fastapi import UploadFile
 import uvicorn
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, FileResponse
+from starlette.staticfiles import StaticFiles
 
 from calibredb import CalibreDb, FxtlMetaData
 
@@ -27,6 +28,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+DIST_DIR = pathlib.Path("./client")
+
+# Mount static assets
+app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
+app.mount("/icons", StaticFiles(directory=DIST_DIR / "icons"), name="icons")
+
+# Serve index.html for the root
+@app.get("/")
+async def read_index():
+    return FileResponse(os.path.join(DIST_DIR, "index.html"))
 
 
 @functools.lru_cache()
@@ -78,6 +91,11 @@ async def set_book_metadata(data: BookMetaData):
 async def get_book(book_id: int, format: str):
     mtype, data = get_db().retrieve_book(book_id, format)
     return Response(content=data, media_type=mtype)
+
+# Serve index.html for all other routes (SPA support)
+@app.get("/{path:path}")
+async def serve_spa(path: str):
+    return FileResponse(os.path.join(DIST_DIR, "index.html"))
 
 def create_user(username: str, password: str):
     os.system(f'''calibre-debug -c "from calibre.srv.users import *; m = UserManager('/config/Calibre Library/users.sqlite'); m.add_user('{username}', '{password}', readonly=False)"''')

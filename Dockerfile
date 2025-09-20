@@ -12,6 +12,8 @@ WORKDIR /home/nightowl
 COPY books_server/requirements.txt .
 RUN python -m venv venv
 RUN ./venv/bin/pip install -r requirements.txt
+
+COPY dist ./client
 COPY books_server/ .
 
 CMD ["./venv/bin/python", "app.py"]
