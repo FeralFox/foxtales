@@ -16,6 +16,7 @@ export default function wheelListener(
   const allowedTime = 50
 
   let dist: number = 0
+  //@ts-ignore
   let isScrolling: NodeJS.Timeout
 
   el.addEventListener('wheel', (e: epubEvent) => {

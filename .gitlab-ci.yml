@@ -4,6 +4,10 @@ stages:
   - build_frontend
   - build_image
 
+cache:
+  paths:
+    - node_modules/
+
 build_frontend:
   stage: build_frontend
   script:
