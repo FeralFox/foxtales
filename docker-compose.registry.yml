@@ -1,0 +1,8 @@
+services:
+  foxtale_registry:
+    image: registry.gitlab.com/pyfox/foxtales
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./volume/library:/config/Calibre Library
+      - ./volume/config:/config/.config/calibre
