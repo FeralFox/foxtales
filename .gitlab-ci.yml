@@ -34,7 +34,6 @@ build_image:
     # Set up Docker Buildx
     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     - docker buildx create --name multiarch --use || true
-    - docker buildx inspect --bootstrap
   script:
     - ls -la dist/  # Verify the dist folder is available
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
