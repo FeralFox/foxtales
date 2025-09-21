@@ -8,28 +8,46 @@ Foxtales is an ebook reader, written as a Progressive Web App.
 
 ## Current features
 
-The project is in a very(!) early state and does is not considered to be usable already. However, the following features
+The project is in a very(!) early state and is not considered to be usable already. However, the following features
 are prepared and considered during the development:
 
 * Offline reading of selected books
-* Support Calibre Content Server (for now it brings its own)
-* Sync of reading progress across devices
 * Ebook-Reader friendly
+* Mobile friendly
 * Installable Web-App
+* Easy to self-host
+* Sync of reading progress across devices
 * Multiple users
+* Support Calibre Content Server (for now it brings its own)
+
+## Supported file formats
+
+* epub
+* pdf
+* cbz
 
 ## Technical stuff
 
-The project is written in VueJS + Python.
+The frontend is written in VueJS, using foliate-js to display the ebooks. 
 
-## Planned Features
+The backend is written in Python, using FastAPI and calibredb to communicate with the shipped Calibre instance.
 
-| Feature                  | Status      |
-|--------------------------|-------------|
-| Provide Docker container | in Progress |
-| Multi-User               | Prepared    |
-| Annotations              | Planned     |
-| Online Demo              | Planned     |
+The Docker container is tested on a Raspberry Pi. 
+
+## Roadmap and planned features
+
+| Feature                                | Status      |
+|----------------------------------------|-------------|
+| Provide Docker container               | In Progress |
+| Implement pagination for big libraries | Planned     |
+| Sync reading progress                  | Prepared    |
+| Multi-User                             | Prepared    |
+| Implement search features              | Planned     |
+| Browse books by tags                   | Planned     |
+| Wishlist books                         | Planned     |
+| Add book discovery                     | Planned     |
+| Online Demo                            | Planned     |
+| Annotations                            | Planned     |
 
 ## Contributions
 * Based on https://github.com/jinhuan138/vue-book-reader
