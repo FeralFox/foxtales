@@ -30,3 +30,8 @@ The project is written in VueJS + Python.
 | Multi-User               | Prepared    |
 | Annotations              | Planned     |
 | Online Demo              | Planned     |
+
+## Contributions
+* Based on https://github.com/jinhuan138/vue-book-reader
+* Using https://github.com/johnfactotum/foliate-js
+* Icons from www.svgrepo.com

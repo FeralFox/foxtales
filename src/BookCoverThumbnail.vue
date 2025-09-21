@@ -1,6 +1,6 @@
 <template>
   <div
-      style="padding: 5px; margin: 1rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
+      style="padding: 5px; font-weight: bold;margin: 1rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
     <div
         :style="{
               backgroundImage: image,
@@ -11,7 +11,7 @@
               marginBottom: '5px'
             }"
     ></div>
-    {{ book.title }}
+    <span style="margin-left: 0.5rem;font-weight: bold;">{{ book.title }}</span>
   </div>
 </template>
 <script>

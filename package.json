@@ -1,6 +1,6 @@
 {
-  "name": "vue-book-reader",
-  "version": "1.0.9",
+  "name": "foxtales",
+  "version": "0.0.1",
   "type": "module",
   "files": [
     "lib"
@@ -16,10 +16,10 @@
     "CBZ",
     "PDF"
   ],
-  "homepage": "https://jinhuan138.github.io/vue-book-reader/",
+  "homepage": "https://github.com/FeralFox/foxtales",
   "repository": {
     "type": "git",
-    "url": "git@github.com:jinhuan138/vue-book-reader.git"
+    "url": "git@github.com:FeralFox/foxtales.git"
   },
   "scripts": {
     "dev": "vite",

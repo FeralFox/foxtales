@@ -1,6 +1,6 @@
 <template>
   <Navigation active="library"/>
-  <div style="display: flex; flex-wrap: wrap;">
+  <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto">
     <div
         style="padding: 5px; margin: 1rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
       <div class="upload-book">

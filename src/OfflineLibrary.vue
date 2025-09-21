@@ -8,7 +8,7 @@
       <button @click="deleteBook(displayBookContextMenu)">Delete from device</button>
       <button @click="closeModal">Abort</button>
     </div>
-    <div style="display: flex; flex-wrap: wrap;">
+    <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto">
       <div
         v-for="book in offlineBooks"
         :key="book.id"

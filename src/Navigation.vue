@@ -17,6 +17,7 @@
   flex-direction: column;
   letter-spacing: 0.7px;
   width: 5rem;
+  min-width: 5rem;
   text-align:center;
 }
 .navigation a {
@@ -44,7 +45,7 @@
 }
 </style>
 <script setup lang="ts">
-import Logo from "../public/logo.svg"
+import Logo from "../public/logo_dark.svg"
 import BookStackIcon from "../public/icons/books-stack-svgrepo-com.svg"
 import LibraryIcon from "../public/icons/books-arranged-vertically-svgrepo-com.svg"
 
