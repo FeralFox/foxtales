@@ -17,10 +17,12 @@ export const makeComicBook = ({ entries, loadBlob, getSize }, file) => {
     }
 
     const exts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.jxl', '.avif']
+    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
     const files = entries
         .map(entry => entry.filename)
         .filter(name => exts.some(ext => name.endsWith(ext)))
-        .sort()
+        .sort(collator.compare)
+
     if (!files.length) throw new Error('No supported image files in archive')
 
     const book = {}
