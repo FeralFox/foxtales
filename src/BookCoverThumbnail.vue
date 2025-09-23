@@ -1,9 +1,9 @@
 <template>
-  <div
-      style="padding: 5px; font-weight: bold;margin: 1rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
+  <div class="book_card">
     <div
         :style="{
               backgroundImage: image,
+              backgroundSize: 'cover',
               width: '100%',
               height: 'calc(100% - 2rem)',
               border: '1px solid #000',
@@ -23,3 +23,23 @@ export default {
   }
 }
 </script>
+<style>
+.book_card {
+  padding: 5px;
+  font-weight: bold;
+  margin: 1rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  width: 15em;
+  height: 21em;
+  font-size: 140%;
+}
+@media (max-width: 640px) {
+  .book_card {
+    width: 10em;
+    height: 16em;
+    font-size: 100%;
+  }
+}
+</style>

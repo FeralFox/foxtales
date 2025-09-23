@@ -1,8 +1,7 @@
 <template>
   <Navigation active="library"/>
   <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto">
-    <div
-        style="padding: 5px; margin: 1rem; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 15em; height: 23em;">
+    <div class="book_card">
       <div class="upload-book">
         <IconAddBook class="add-book-icon"/>
         Upload Book
@@ -21,8 +20,8 @@
 
 <style>
 .add-book-icon {
-  height: 5rem;
-  width: 5rem;
+  height: 50%;
+  width: 50%;
   padding-bottom: 1rem;
   color: #777;
 }
@@ -48,7 +47,6 @@
   display: flex;
   justify-content: center;
   flex-direction: column;
-  font-size: 140%;
   align-items: center;
   font-weight: bold;
   cursor: pointer
