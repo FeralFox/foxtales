@@ -4,9 +4,8 @@ import { resolve } from 'path'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "vue-book-reader",
-  description: "vue-book-reader document",
-  base: '/vue-book-reader/',
+  title: "foxtales",
+  description: "foxtales ebook library with offline support",
   cleanUrls: true,
   markdown: {
       theme: { light: 'github-light', dark: 'github-dark' },

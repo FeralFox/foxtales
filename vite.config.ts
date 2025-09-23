@@ -2,42 +2,40 @@ import {defineConfig} from 'vite'
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
 import vue from '@vitejs/plugin-vue'
 import svgLoader from 'vite-svg-loader'
+import {VitePWA} from 'vite-plugin-pwa'
 
 
 // https://cn.vitejs.dev/config/
 export default defineConfig({
-    plugins: [vue(), cssInjectedByJsPlugin(), svgLoader({
-        defaultImport: "component"
-    })],
+    plugins: [vue(),
+        cssInjectedByJsPlugin(),
+        svgLoader({
+            defaultImport: "component"
+        }),
+        VitePWA({
+            registerType: 'autoUpdate',
+            includeAssets: ['favicon.ico'],
+            manifest: {
+                name: 'Foxtales Ebook Library',
+                short_name: 'Foxtales',
+                description: 'An ebook library and reader',
+                theme_color: '#ffffff',
+                icons: [
+                    {
+                        src: 'logo192.png',
+                        sizes: '192x192',
+                        type: 'image/png'
+                    },
+                    {
+                        src: 'logo512.png',
+                        sizes: '512x512',
+                        type: 'image/png'
+                    }
+                ]
+            }
+        })
+    ],
     build: {
         target: 'esnext' //browsers can handle the latest ES features
     },
-    // resolve: {
-    //     alias: {
-    //         '@': fileURLToPath(new URL('./src', import.meta.url))
-    //     },
-    // },
-    // build: {
-    //     copyPublicDir: false,
-    //     emptyOutDir: true,
-    //     sourcemap: false,
-    //     target: "esnext",
-    //     minify: true,
-    //     outDir: 'lib',
-    //     lib: {
-    //         entry: 'src/modules/index.ts',
-    //         name: 'vue-book-reader',
-    //         fileName: (format) => `vue-book-reader.${format}.js`
-    //     },
-    //     rollupOptions: {
-    //         // 确保外部化处理那些你不想打包进库的依赖
-    //         external: ['vue'],
-    //         output: {
-    //             // 在 UMD 构建模式下为这些外部化的依赖提供一个全局变量
-    //             globals: {
-    //                 vue: 'Vue',
-    //             },
-    //         },
-    //     },
-    // },
 })
