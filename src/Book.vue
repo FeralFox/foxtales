@@ -1,6 +1,7 @@
 <template>
   <div id="reader-content" v-if="url" style="position: relative;width:100%;height:100%">
     <vue-reader
+        :location="initialPosition"
         :url="url"
         :getRendition="getRendition"
         @update:location="locationChange"
@@ -27,6 +28,7 @@ import {getValuesFromIndexedDB, loadFromIndexedDB, saveToIndexedDB} from './dbac
 
 const url = ref('')
 const book_metadata = ref('')
+const initialPosition = ref(0)
 let initialized = ref(false)
 
 function dataURLtoFile(dataurl, filename) {
@@ -43,12 +45,10 @@ function dataURLtoFile(dataurl, filename) {
 
 const loadBook = async () => {
   const book_id = window.location.hash.split("?")[1].slice(3)
-  console.log(book_id)
   const bmm =  await loadFromIndexedDB("books", "books", book_id)
-  console.log(bmm)
   book_metadata.value = bmm
+  initialPosition.value = book_metadata.value.progress.position
   const blob = await loadFromIndexedDB("data", "data", book_id)
-  console.log(blob)
   const format = bmm.formats[0].toLowerCase()
   url.value = new File([blob], `${book_metadata.value.title}.${format}`); //dataURLtoFile(`data:${book_metadata.value.data.mimetype};base64,${book.data}`, `${book_metadata.value.data.title}.cbz`)
 }
@@ -67,7 +67,6 @@ const getRendition = async (val) => {
   view = val
   let initialPosition = book_metadata.value.progress.position;
   console.log("load position", initialPosition)
-  setTimeout(() => initLocation({fraction: initialPosition}), 1000)
 }
 
 const initLocation = async(position) => {
@@ -87,7 +86,6 @@ const locationChange = async (detail) => {
       lastUpdated: new Date().getTime()
     }
     let tr = toRaw(book_metadata.value);
-    console.log("updateprogress", fraction)
     await saveToIndexedDB("books", "books", tr, book_metadata.value.id)
   }
   current.value = Math.floor(fraction * 100)
@@ -117,6 +115,6 @@ const locationChange = async (detail) => {
   opacity: 0.5;
 }
 #reader-content {
-  visibility: hidden;
+  visibility: inherit;
 }
 </style>

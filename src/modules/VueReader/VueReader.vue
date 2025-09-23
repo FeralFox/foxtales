@@ -26,6 +26,7 @@
       <book-view
         ref="bookRef"
         v-bind="$attrs"
+        :location="props.location"
         :tocChanged="onTocChange"
         :getRendition="onGetRendition"
       >
@@ -159,6 +160,9 @@ const props = defineProps({
   showToc: {
     type: Boolean,
     default: true,
+  },
+  location: {
+    type: [String, Number]
   },
   title: {
     type: String,

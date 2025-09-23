@@ -111,7 +111,9 @@ const initReader = () => {
   registerEvents()
   getRendition(view)
   tocChanged && tocChanged(book.toc)
-  if (location.value) {
+  if (typeof location.value === "number") {
+    view.goToFraction(location.value)
+  } else if (location.value) {
     view?.goTo(location.value)
   } else {
     view.renderer.next()
