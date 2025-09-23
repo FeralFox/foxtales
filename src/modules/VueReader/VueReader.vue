@@ -395,13 +395,12 @@ const setLocation = (href, close = true) => {
   background: #f2f2f2;
 }
 
-/* 翻页 */
 .arrow {
   outline: none;
   border: none;
   background: none;
   position: absolute;
-  top: 50%;
+  top: 0;
   margin-top: -32px;
   font-size: 64px;
   padding: 0 10px;
@@ -411,6 +410,7 @@ const setLocation = (href, close = true) => {
   user-select: none;
   appearance: none;
   font-weight: normal;
+  height: 100%;
 }
 
 .arrow:hover {
