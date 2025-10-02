@@ -59,13 +59,8 @@ import {saveToIndexedDB} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
 import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
-import {URL} from "./constants"
+import {authHeaders, URL} from "./constants"
 
-
-function authHeaders() {
-  const token = localStorage.getItem('auth_token')
-  return token ? { 'Authorization': `Bearer ${token}` } : {}
-}
 
 async function fetchAsync(url: string) {
   const response = await fetch(url, { headers: authHeaders() })

@@ -43,6 +43,7 @@
 
     <div v-if="showToc">
       <div class="tocArea">
+        <button @click="closeBook" style="margin-left: 50%;transform: translate(-50%, 0);">Back to library</button>
         <TocComponent
           :toc="toc"
           :current="currentHref"
@@ -65,6 +66,10 @@ import {
   Transition,
   h as _h,
 } from 'vue'
+
+function closeBook() {
+  window.location.hash='/'
+}
 
 const TocComponent = defineComponent({
   name: 'TocComponent',

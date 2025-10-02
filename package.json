@@ -43,7 +43,8 @@
     "vitepress": "1.0.0-rc.45",
     "vue": "^3.4.21",
     "vue-book-reader": "^1.0.9",
-    "vue-tsc": "^2.0.6"
+    "vue-tsc": "^2.0.6",
+    "vue-router": "^4.4.5"
   },
   "browser": {
     "canvas": false
