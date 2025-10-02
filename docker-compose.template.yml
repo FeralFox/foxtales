@@ -1,8 +1,13 @@
 services:
-  foxtale_registry:
+  foxtale:
     image: registry.gitlab.com/pyfox/foxtales
     ports:
       - "8000:8000"
     volumes:
       - ./volume/library:/config/Calibre Library
       - ./volume/config:/config/.config/calibre
+    environment:
+      SECRET_KEY: "<secretkey>"
+      DEFAULT_USER: username
+      DEFAULT_USER_PASSWORD: password
+

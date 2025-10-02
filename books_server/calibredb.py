@@ -21,6 +21,10 @@ class FxtlMetaData:
     progress_updated: float
 
 
+class AuthenticationError(ValueError):
+    pass
+
+
 class CalibreDb:
     def __init__(self, host: str, user: str, password: str):
         self._host = host
@@ -32,7 +36,10 @@ class CalibreDb:
         return ['--username', self._user, '--with-library', self._host, '--password', self._password]
 
     def _upgrade_library(self):
-        columns = self.get_custom_columns()
+        try:
+            columns = self.get_custom_columns()
+        except Exception:
+            raise AuthenticationError()
         if not "fxtl_owner" in columns.values():
             self._add_custom_column("fxtl_owner", "Added by", "text", False)
         if not "fxtl_users" in columns.values():

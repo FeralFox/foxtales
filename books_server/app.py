@@ -1,25 +1,39 @@
 import base64
-import functools
-import json
+import dataclasses
 import os
 import pathlib
 import tempfile
 import threading
-import time
+from builtins import RuntimeError
+from datetime import timedelta, datetime, timezone
+from typing import Annotated, Optional
+
+import jwt
 import fastapi
-from fastapi import UploadFile
+from fastapi import UploadFile, Depends, HTTPException
 import uvicorn
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jwt import InvalidTokenError
 from pydantic import BaseModel
+from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, FxtlMetaData
+from calibredb import CalibreDb, FxtlMetaData, AuthenticationError
 
 LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+DEFAULT_USER = os.getenv("DEFAULT_USER")
+DEFAULT_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD")
+assert SECRET_KEY, "Nodsfdsf SECRET_KEY environment variable provided"
+assert DEFAULT_USER, "No DEFAULT_USER environment variable provided"
+assert DEFAULT_PASSWORD, "No DEFAULT_USER_PASSWORD environment variable provided"
 
 app = fastapi.FastAPI()
 origins = ["*"]
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+ALGORITHM = "HS256"
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,40 +50,95 @@ DIST_DIR = pathlib.Path("./client")
 app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
 app.mount("/icons", StaticFiles(directory=DIST_DIR / "icons"), name="icons")
 
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except InvalidTokenError:
+        raise credentials_exception
+    user = active_users.get(username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+@dataclasses.dataclass
+class ActiveUserData:
+    username: str
+    library: CalibreDb
+
+
+active_users: dict[str, ActiveUserData] = {}
+
+@app.post("/token")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+    username = form_data.username
+    password = form_data.password
+    try:
+        library = CalibreDb("http://localhost:8080", username, password)
+    except AuthenticationError:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    access_token = create_access_token(
+        data={"sub": username}, expires_delta=timedelta(minutes=60)
+    )
+    active_users[username] = ActiveUserData(username=username, library=library)
+    return Token(access_token=access_token, token_type="bearer")
+
+
 # Serve index.html for the root
 @app.get("/")
 async def read_index():
     return FileResponse(os.path.join(DIST_DIR, "index.html"))
 
 
-@functools.lru_cache()
-def get_db():
-    return CalibreDb("http://localhost:8080", "abc", "123")
-
-
 @app.put("/add_book")
-async def add_book(file: UploadFile):
+async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], file: UploadFile):
     with tempfile.TemporaryDirectory() as tmpdir_str:
         the_dir = pathlib.Path(tmpdir_str)
         the_file = the_dir / file.filename
         the_file.write_bytes(await file.read())
-        book_id = get_db().add_book(the_file)
+        book_id = current_user.library.add_book(the_file)
     return book_id
 
 
 @app.get("/list_books")
-async def list_books(search_query: str = "", fields: str = "all"):
-    return list(reversed(get_db().list_books(search_query, fields)))
+async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str = "", fields: str = "all"):
+    return list(reversed(current_user.library.list_books(search_query, fields)))
+    # return list(reversed(get_db().list_books(search_query, fields)))
 
 
 @app.get("/get_book_metadata")
-async def get_book_details(book_id: int):
-    return get_db().get_book_metadata(book_id)
+async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int):
+    return current_user.library.get_book_metadata(book_id)
 
 
 @app.get("/get_book_cover")
-async def get_book_cover(book_id: int, data_url: bool = False):
-    mtype, data = get_db().retrieve_cover(book_id)
+async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int, data_url: bool = False):
+    mtype, data = current_user.library.retrieve_cover(book_id)
     if data_url:
         b64 = base64.b64encode(data).decode("utf-8")
         return f"data:{mtype};base64,{b64}"
@@ -83,17 +152,17 @@ class BookMetaData(BaseModel):
 
 
 @app.post("/set_book_metadata")
-async def set_book_metadata(data: BookMetaData):
-    return get_db().update_metadata(data.book_id, data.data)
+async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
+    return current_user.library.update_metadata(data.book_id, data.data)
 
 
 @app.get("/get_book")
-async def get_book(book_id: int, format: str):
-    mtype, data = get_db().retrieve_book(book_id, format)
+async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int, format: str):
+    mtype, data = current_user.library.retrieve_book(book_id, format)
     return Response(content=data, media_type=mtype)
 
 # Serve index.html for all other routes (SPA support)
-@app.get("/{path:path}")
+@app.get("/{path:path}", include_in_schema=False)
 async def serve_spa(path: str):
     return FileResponse(os.path.join(DIST_DIR, "index.html"))
 
@@ -125,6 +194,4 @@ def run_calibre_server():
 
 
 threading.Thread(target=run_calibre_server).start()
-time.sleep(2)
-print(json.dumps(get_db().list_books(), indent=2))
 uvicorn.run(app, host="0.0.0.0", port=8000)
