@@ -40,17 +40,10 @@ class CalibreDb:
             columns = self.get_custom_columns()
         except Exception:
             raise AuthenticationError()
-        if not "fxtl_owner" in columns.values():
-            self._add_custom_column("fxtl_owner", "Added by", "text", False)
-        if not "fxtl_users" in columns.values():
-            self._add_custom_column("fxtl_users", "Users with Access", "text", True)
-
-
-    def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
-        print(f"Add custom column {name}")
-        if is_multiple:
-            is_multiple = ["--is-multiple"]
-        subprocess.check_output(["calibredb", "add_custom_column", *is_multiple, name, display_name, datatype, *self._get_auth()])
+        # if not "fxtl_owner" in columns.values():
+        #     self._add_custom_column("fxtl_owner", "Added by", "text", False)
+        # if not "fxtl_users" in columns.values():
+        #     self._add_custom_column("fxtl_users", "Users with Access", "text", True)
 
     def get_custom_columns(self) -> dict[int, str]:
         result = subprocess.check_output(['calibredb', 'custom_columns', *self._get_auth()])
@@ -71,11 +64,11 @@ class CalibreDb:
         results = []
         for res in json.loads(result):
 
-            users_with_access = res.get("fxtl_users", [self._user])
-            owner = res.get("fxtl_owner", self._user)
+            # users_with_access = res.get("fxtl_users", [self._user])
+            # owner = res.get("fxtl_owner", self._user)
 
-            if self._user != owner and self._user not in users_with_access and not "everybody" in users_with_access:
-                continue
+            # if self._user != owner and self._user not in users_with_access and not "everybody" in users_with_access:
+            #     continue
             results.append(res)
 
         return results
@@ -86,8 +79,8 @@ class CalibreDb:
             book_id = int(re.findall(b"\d+", result)[0])
         except Exception as error:
             raise RuntimeError(f"Unexpected response when calling 'calibredb add': {result}") from error
-        result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_owner", str(book_id), ",".join(users or [self._user]), *self._get_auth()])
-        print("Calibredb set_custom output", result)
+        # result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_owner", str(book_id), ",".join(users or [self._user]), *self._get_auth()])
+        # print("Calibredb set_custom output", result)
         return book_id
 
     def update_metadata(self, book_id: int, metadata: FxtlMetaData):

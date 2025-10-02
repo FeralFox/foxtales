@@ -185,7 +185,7 @@ def load_default_data():
 if not LIBRARY_PATH.exists() or not (LIBRARY_PATH / "metadata.db").exists():
     print(f"Didn't find {LIBRARY_PATH}/metadata.db. Copy default library.")
     load_default_data()
-    create_user("abc", "123")
+    create_user(DEFAULT_USER, DEFAULT_PASSWORD)
     print("~~~ INITIAL SETUP DONE ~~~")
 
 
