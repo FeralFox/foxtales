@@ -5,6 +5,8 @@
     <a :class="props.active === 'local' ? 'is-active' : ''" href="#/"><BookStackIcon class="logo" />
       Local</a>
     <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"><LibraryIcon class="logo"/>Library</a>
+    <div style="flex-grow: 1" />
+    <button v-if="isAuthenticated" class="logout-btn" @click="logout">Logout</button>
   </div>
 </template>
 <style>
@@ -43,11 +45,31 @@
   height: 3rem;
   opacity: 1;
 }
+.logout-btn {
+  margin-top: 0.5rem;
+  background: transparent;
+  color: white;
+  border: 1px solid #fff6;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+.logout-btn:hover {
+  background: #fff3;
+}
 </style>
 <script setup lang="ts">
+import { computed } from 'vue'
 import Logo from "../public/logo_dark.svg"
 import BookStackIcon from "../public/icons/books-stack-svgrepo-com.svg"
 import LibraryIcon from "../public/icons/books-arranged-vertically-svgrepo-com.svg"
 
-const props = defineProps(["active"])
+const props = defineProps(["active"]) 
+
+const isAuthenticated = computed(() => !!localStorage.getItem('auth_token'))
+
+function logout() {
+  localStorage.removeItem('auth_token')
+  window.location.hash = '/'
+}
 </script>

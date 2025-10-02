@@ -94,9 +94,9 @@ const locationChange = async (detail) => {
 <style>
 .progress {
   position: absolute;
-  bottom: 1rem;
-  right: 1rem;
-  left: 1rem;
+  bottom: 0;
+  right: 0;
+  left: 0;
   z-index: 1;
   color: #000;
   display: flex;
@@ -110,7 +110,7 @@ const locationChange = async (detail) => {
 
 .progress > input[type='range'] {
   width: 100%;
-  height: 2px;
+  height: 5px;
   accent-color: #000;
   opacity: 0.5;
 }

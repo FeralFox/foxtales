@@ -78,7 +78,7 @@ async function loadOfflineBooks() {
 }
 
 function goToBook(id: string) {
-  window.location.href = `/#book?id=${id}`
+  window.location.href = `/#/book?id=${id}`
 }
 
 onMounted(() => {

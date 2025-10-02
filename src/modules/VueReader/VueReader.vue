@@ -17,11 +17,11 @@
         <span class="tocButtonBar" style="top: 66%"></span>
       </button>
 
-      <slot name="title">
-        <div class="titleArea" :title="title || bookName">
-          {{ title || bookName }}
-        </div>
-      </slot>
+<!--      <slot name="title">-->
+<!--        <div class="titleArea" :title="title || bookName">-->
+<!--          {{ title || bookName }}-->
+<!--        </div>-->
+<!--      </slot>-->
 
       <book-view
         ref="bookRef"

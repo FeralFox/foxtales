@@ -11,7 +11,7 @@
     <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer">
       <BookCoverThumbnail
           :book="book"
-          :image="`url(${URL}/get_book_cover?book_id=${book.id})`"
+          :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
       />
 
     </div>
@@ -62,8 +62,13 @@ import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
 import {URL} from "./constants"
 
 
+function authHeaders() {
+  const token = localStorage.getItem('auth_token')
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
+
 async function fetchAsync(url: string) {
-  const response = await fetch(url)
+  const response = await fetch(url, { headers: authHeaders() })
   return await response.json()
 }
 
@@ -73,6 +78,7 @@ interface BookMeta {
 }
 
 const books = ref<BookMeta[]>([])
+const covers = ref<Record<string, string>>({})
 
 async function uploadFile(event: Event) {
   const input = event.target as HTMLInputElement
@@ -83,6 +89,7 @@ async function uploadFile(event: Event) {
   formData.append('file', file)
   await fetch(`${URL}/add_book`, {
     method: 'PUT',
+    headers: authHeaders(),
     body: formData,
   })
   await loadBooks()
@@ -93,9 +100,9 @@ async function uploadFile(event: Event) {
 async function downloadBook(identifier: string) {
   const bookMetaData = await fetchAsync(`${URL}/get_book_metadata?book_id=${identifier}`)
   const format = bookMetaData.formats[0]
-  const book = await fetch(`${URL}/get_book?book_id=${identifier}&format=${format}`)
+  const book = await fetch(`${URL}/get_book?book_id=${identifier}&format=${format}`, { headers: authHeaders() })
   const blob = await book.blob()
-  const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`)
+  const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`, { headers: authHeaders() })
   const coverBase64 = await cover.text()
   console.log(`Save`, identifier, bookMetaData)
   await saveToIndexedDB(
@@ -110,8 +117,18 @@ async function downloadBook(identifier: string) {
 
 async function loadBooks() {
   const fetchedBooks = await fetchAsync(`${URL}/list_books`)
-  console.log(fetchedBooks)
   books.value = fetchedBooks
+  // prefetch covers as data urls (requires auth header)
+  const map: Record<string, string> = {}
+  await Promise.all(fetchedBooks.map(async (b: any) => {
+    try {
+      const resp = await fetch(`${URL}/get_book_cover?book_id=${b.id}&data_url=true`, { headers: authHeaders() })
+      if (resp.ok) {
+        map[b.id] = await resp.text()
+      }
+    } catch {}
+  }))
+  covers.value = map
 }
 
 onMounted(() => {

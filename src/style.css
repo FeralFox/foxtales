@@ -41,8 +41,8 @@
   }
   :root {
       --border-horizontal: 10px;
-      --padding-top: 50px;
-      --padding-bottom: 30px;
+      --padding-top: 10px;
+      --padding-bottom: 10px;
   }
 
   .cover_thumbnail {
