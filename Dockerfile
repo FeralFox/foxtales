@@ -16,4 +16,5 @@ RUN ./venv/bin/pip install -r requirements.txt
 COPY dist ./client
 COPY books_server/ .
 
+ENV S6_KEEP_ENV=1
 CMD ["./venv/bin/python", "app.py"]
