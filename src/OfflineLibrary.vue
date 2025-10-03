@@ -73,7 +73,8 @@ async function loadOfflineBooks() {
     console.log(bks)
     offlineBooks.value = bks
   } catch (e) {
-    window.location.href = '/#lib'
+    console.log(e)
+    window.location.href = '/#/lib'
   }
 }
 
