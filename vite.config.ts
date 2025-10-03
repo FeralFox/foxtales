@@ -14,7 +14,7 @@ export default defineConfig({
         }),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'logo.svg', 'logo192.png', 'logo512.png'],
+            includeAssets: ['favicon.ico', 'icons/logo.svg', 'icons/logo192.png', 'icons/logo512.png'],
             manifest: {
                 name: 'Foxtales Ebook Library',
                 short_name: 'Foxtales',
@@ -27,13 +27,13 @@ export default defineConfig({
                 orientation: 'any',
                 icons: [
                     {
-                        src: '/logo192.png',
+                        src: '/icons/logo192.png',
                         sizes: '192x192',
                         type: 'image/png',
                         purpose: 'any maskable'
                     },
                     {
-                        src: '/logo512.png',
+                        src: '/icons/logo512.png',
                         sizes: '512x512',
                         type: 'image/png',
                         purpose: 'any maskable'

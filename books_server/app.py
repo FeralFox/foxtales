@@ -163,7 +163,9 @@ async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
 # Serve index.html for all other routes (SPA support)
 @app.get("/{path:path}", include_in_schema=False)
 async def serve_spa(path: str):
-    return FileResponse(os.path.join(DIST_DIR, "index.html"))
+    if (DIST_DIR / path).exists():
+        return FileResponse(DIST_DIR / path)
+    return FileResponse(DIST_DIR / "index.html")
 
 def create_user(username: str, password: str):
     os.system(f'''calibre-debug -c "from calibre.srv.users import *; m = UserManager('/config/Calibre Library/users.sqlite'); m.add_user('{username}', '{password}', readonly=False)"''')

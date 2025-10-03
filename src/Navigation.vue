@@ -60,7 +60,7 @@
 </style>
 <script setup lang="ts">
 import { computed } from 'vue'
-import Logo from "../public/logo_dark.svg"
+import Logo from "../public/icons/logo_dark.svg"
 import BookStackIcon from "../public/icons/books-stack-svgrepo-com.svg"
 import LibraryIcon from "../public/icons/books-arranged-vertically-svgrepo-com.svg"
 
