@@ -14,22 +14,29 @@ export default defineConfig({
         }),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico'],
+            includeAssets: ['favicon.ico', 'logo.svg', 'logo192.png', 'logo512.png'],
             manifest: {
                 name: 'Foxtales Ebook Library',
                 short_name: 'Foxtales',
                 description: 'An ebook library and reader',
-                theme_color: '#ffffff',
+                theme_color: '#fff',
+                background_color: '#fff',
+                display: 'standalone',
+                scope: '/',
+                start_url: '/',
+                orientation: 'any',
                 icons: [
                     {
-                        src: 'logo192.png',
+                        src: '/logo192.png',
                         sizes: '192x192',
-                        type: 'image/png'
+                        type: 'image/png',
+                        purpose: 'any maskable'
                     },
                     {
-                        src: 'logo512.png',
+                        src: '/logo512.png',
                         sizes: '512x512',
-                        type: 'image/png'
+                        type: 'image/png',
+                        purpose: 'any maskable'
                     }
                 ]
             }

@@ -4,7 +4,6 @@ import os
 import pathlib
 import tempfile
 import threading
-from builtins import RuntimeError
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
@@ -26,7 +25,7 @@ LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEFAULT_USER = os.getenv("DEFAULT_USER")
 DEFAULT_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD")
-assert SECRET_KEY, "Nodsfdsf SECRET_KEY environment variable provided"
+assert SECRET_KEY, "No SECRET_KEY environment variable provided"
 assert DEFAULT_USER, "No DEFAULT_USER environment variable provided"
 assert DEFAULT_PASSWORD, "No DEFAULT_USER_PASSWORD environment variable provided"
 
