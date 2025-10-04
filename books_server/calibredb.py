@@ -36,7 +36,6 @@ class CalibreDb:
         return ['--with-library', LIBRARY_PATH.as_posix()]
 
     def _upgrade_library(self):
-        os.system("ps x")
         try:
             columns = self.get_custom_columns()
         except Exception:
@@ -81,8 +80,8 @@ class CalibreDb:
             all_users_with_access = [owner, *users_with_access]
 
             if self._user in all_users_with_access or not all_users_with_access:
+                res["formats"] = [path.rsplit(".", 1)[-1].upper() for path in res.get("formats", [])]
                 results.append(res)
-
         return results
 
     def add_book(self, book: pathlib.Path, users: Optional[list[str]] = None) -> int:
