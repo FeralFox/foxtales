@@ -4,9 +4,16 @@
     <div class="book_card">
       <div class="upload-book">
         <IconAddBook class="add-book-icon"/>
-        Upload Book
-        <input class="file-upload" type="file" accept="*" @change="uploadFile"/>
+        <div v-if="!isUploading">Upload Book</div>
+        <div v-else class="progress-container">
+          <div class="progress-label">Uploading... {{ uploadProgress }}%</div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
+          </div>
+        </div>
+        <input :disabled="isUploading" class="file-upload" type="file" accept="*" @change="uploadFile"/>
       </div>
+      <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
     </div>
     <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer">
       <BookCoverThumbnail
@@ -51,6 +58,37 @@
   font-weight: bold;
   cursor: pointer
 }
+
+.progress-container {
+  width: 80%;
+}
+
+.progress-label {
+  font-weight: normal;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #4caf50;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+.upload-error {
+  color: #b00020;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
 </style>
 
 <script setup lang="ts">
@@ -74,6 +112,9 @@ interface BookMeta {
 
 const books = ref<BookMeta[]>([])
 const covers = ref<Record<string, string>>({})
+const isUploading = ref(false)
+const uploadProgress = ref(0)
+const uploadError = ref('')
 
 async function uploadFile(event: Event) {
   const input = event.target as HTMLInputElement
@@ -82,14 +123,65 @@ async function uploadFile(event: Event) {
 
   const formData = new FormData()
   formData.append('file', file)
-  await fetch(`${URL}/add_book`, {
-    method: 'PUT',
-    headers: authHeaders(),
-    body: formData,
-  })
-  await loadBooks()
-  // clear the file input so the same file can be selected again if needed
-  input.value = ''
+
+  // Reset state
+  isUploading.value = true
+  uploadProgress.value = 0
+  uploadError.value = ''
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', `${URL}/add_book`)
+
+      // Set auth headers from authHeaders()
+      const headers = authHeaders()
+      if (headers instanceof Headers) {
+        headers.forEach((value, key) => xhr.setRequestHeader(key, value))
+      } else if (Array.isArray(headers)) {
+        headers.forEach(([key, value]) => xhr.setRequestHeader(key, value))
+      } else if (headers && typeof headers === 'object') {
+        Object.entries(headers).forEach(([key, value]) => {
+          if (typeof value === 'string') xhr.setRequestHeader(key, value)
+        })
+      }
+
+      // Progress events
+      xhr.upload.onprogress = (e: ProgressEvent) => {
+        if (e.lengthComputable) {
+          uploadProgress.value = Math.min(100, Math.round((e.loaded / e.total) * 100))
+        }
+      }
+
+      xhr.onload = () => {
+        // Accept 200-299 range
+        if (xhr.status >= 200 && xhr.status < 300) {
+          uploadProgress.value = 100
+          resolve()
+        } else {
+          reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`))
+        }
+      }
+
+      xhr.onerror = () => reject(new Error('Network error during upload'))
+      xhr.onabort = () => reject(new Error('Upload aborted'))
+
+      xhr.send(formData)
+    })
+
+    await loadBooks()
+  } catch (e: any) {
+    console.error(e)
+    uploadError.value = e?.message || 'Upload failed'
+  } finally {
+    // clear the file input so the same file can be selected again if needed
+    if (input) input.value = ''
+    // small delay to let user see 100%
+    setTimeout(() => {
+      isUploading.value = false
+      uploadProgress.value = 0
+    }, 400)
+  }
 }
 
 async function downloadBook(identifier: string) {
