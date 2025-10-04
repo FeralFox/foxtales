@@ -41,8 +41,6 @@
       --border-horizontal: 10px;
       --padding-top: 10px;
       --padding-bottom: 10px;
-  }
-
-  .cover_thumbnail {
-
+      --transition-default: ease-in-out 0.2s;
+      --color-tag: #614630
   }

@@ -27,7 +27,10 @@
   font-weight: bold;
   text-decoration: none;
   border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px
+  border-bottom-left-radius: 5px;
+  line-height: 1;
+  padding-bottom: 5px;
+  transition: var(--transition-default);
 }
 .navigation a.is-active {
   background-color: white;
@@ -40,10 +43,10 @@
   background-color: white
 }
 .logo {
-  width: 3rem;
+  width: 2.5rem;
+  height: 2.5rem;
   padding: 0.5rem;
   padding-bottom: 0;
-  height: 3rem;
   opacity: 1;
 }
 .logout-btn {
@@ -54,6 +57,7 @@
   border-radius: 4px;
   padding: 0.25rem 0.5rem;
   cursor: pointer;
+  transition: var(--transition-default)
 }
 .logout-btn:hover {
   background: #fff3;

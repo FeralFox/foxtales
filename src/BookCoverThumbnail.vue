@@ -61,8 +61,12 @@ export default {
 }
 
 .episode-label {
-  width: 1rem;
-  margin-left:0.2rem;
+  background-color: var(--color-tag);
+  font-size: 0.9em;
+  color: #fffd;
+  font-weight: bold;
+  padding: 0 6px;
+  border-radius: 5px;
 }
 
 .full-title {
