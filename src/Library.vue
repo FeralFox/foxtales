@@ -15,7 +15,15 @@
       </div>
       <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
     </div>
-    <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer">
+    <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer; position: relative">
+      <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
+        <div class="progress-container">
+          <div class="progress-label">Download... {{ downloadProgress }}%</div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill" :style="{ width: downloadProgress + '%' }"></div>
+          </div>
+        </div>
+      </div>
       <BookCoverThumbnail
           :book="book"
           :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
@@ -89,6 +97,18 @@
   font-size: 0.9rem;
   margin-top: 0.25rem;
 }
+
+.download-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  z-index: 1;
+  text-align: center;
+}
 </style>
 
 <script setup lang="ts">
@@ -112,6 +132,9 @@ interface BookMeta {
 
 const books = ref<BookMeta[]>([])
 const covers = ref<Record<string, string>>({})
+const downloadingId = ref<string>('')
+const downloadProgress = ref(0)
+const downloadError = ref('')
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 const uploadError = ref('')
@@ -185,21 +208,68 @@ async function uploadFile(event: Event) {
 }
 
 async function downloadBook(identifier: string) {
-  const bookMetaData = await fetchAsync(`${URL}/get_book_metadata?book_id=${identifier}`)
-  const format = bookMetaData.formats[0]
-  const book = await fetch(`${URL}/get_book?book_id=${identifier}&format=${format}`, { headers: authHeaders() })
-  const blob = await book.blob()
-  const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`, { headers: authHeaders() })
-  const coverBase64 = await cover.text()
-  console.log(`Save`, identifier, bookMetaData)
-  await saveToIndexedDB(
-      'books',
-      'books',
-      bookMetaData,
-      identifier
-  )
-  await saveToIndexedDB(`cover`, 'cover', coverBase64, identifier)
-  await saveToIndexedDB(`data`, 'data', blob, identifier)
+  // reset and show overlay for this book
+  downloadingId.value = identifier
+  downloadProgress.value = 0
+  downloadError.value = ''
+  try {
+    const bookMetaData = await fetchAsync(`${URL}/get_book_metadata?book_id=${identifier}`)
+    const format = bookMetaData.formats?.[0]
+
+    // Download book blob with progress using XHR
+    const blob: Blob = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', `${URL}/get_book?book_id=${identifier}&format=${format}`)
+
+      // auth header
+      const headers = authHeaders()
+      if (headers instanceof Headers) {
+        headers.forEach((value, key) => xhr.setRequestHeader(key, value))
+      } else if (Array.isArray(headers)) {
+        headers.forEach(([key, value]) => xhr.setRequestHeader(key, value))
+      } else if (headers && typeof headers === 'object') {
+        Object.entries(headers).forEach(([key, value]) => {
+          if (typeof value === 'string') xhr.setRequestHeader(key, value)
+        })
+      }
+
+      xhr.responseType = 'blob'
+      xhr.onprogress = (e: ProgressEvent) => {
+        if (e.lengthComputable) {
+          downloadProgress.value = Math.min(100, Math.round((e.loaded / e.total) * 100))
+        }
+      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          downloadProgress.value = 100
+          resolve(xhr.response)
+        } else {
+          reject(new Error(`Download failed: ${xhr.status} ${xhr.statusText}`))
+        }
+      }
+      xhr.onerror = () => reject(new Error('Network error during download'))
+      xhr.onabort = () => reject(new Error('Download aborted'))
+      xhr.send()
+    })
+
+    // Download cover (small) - no progress bar necessary
+    const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`, { headers: authHeaders() })
+    const coverBase64 = await cover.text()
+
+    // Save all to IndexedDB
+    await saveToIndexedDB('books', 'books', bookMetaData, identifier)
+    await saveToIndexedDB(`cover`, 'cover', coverBase64, identifier)
+    await saveToIndexedDB(`data`, 'data', blob, identifier)
+  } catch (e: any) {
+    console.error(e)
+    downloadError.value = e?.message || 'Download failed'
+  } finally {
+    // allow the user to see 100% briefly
+    setTimeout(() => {
+      downloadingId.value = ''
+      downloadProgress.value = 0
+    }, 400)
+  }
 }
 
 async function loadBooks() {
