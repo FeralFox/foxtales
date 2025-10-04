@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import mimetypes
+import os
 import pathlib
 import re
 import subprocess
@@ -30,20 +31,28 @@ class CalibreDb:
         self._host = host
         self._user = user
         self._password = password
-        self._upgrade_library()
 
     def _get_auth(self):
-        return ['--username', self._user, '--with-library', self._host, '--password', self._password]
+        return ['--with-library', LIBRARY_PATH.as_posix()]
 
     def _upgrade_library(self):
+        os.system("ps x")
         try:
             columns = self.get_custom_columns()
         except Exception:
             raise AuthenticationError()
-        # if not "fxtl_owner" in columns.values():
-        #     self._add_custom_column("fxtl_owner", "Added by", "text", False)
-        # if not "fxtl_users" in columns.values():
-        #     self._add_custom_column("fxtl_users", "Users with Access", "text", True)
+        if not "fxtl_owner" in columns.values():
+            self._add_custom_column("fxtl_owner", "Added by", "text", False)
+        if not "fxtl_users" in columns.values():
+            self._add_custom_column("fxtl_users", "Users with Access", "text", True)
+
+
+    def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
+        print(f"Add custom column {name}")
+        is_multiple = []
+        if is_multiple:
+            is_multiple = ["--is-multiple"]
+        subprocess.check_output(["calibredb", "add_custom_column", *is_multiple, name, display_name, datatype, *self._get_auth()])
 
     def get_custom_columns(self) -> dict[int, str]:
         result = subprocess.check_output(['calibredb', 'custom_columns', *self._get_auth()])
@@ -63,13 +72,16 @@ class CalibreDb:
         result = subprocess.check_output(['calibredb', 'list', *filter_options, '--fields', fields, '--for-machine', *self._get_auth()])
         results = []
         for res in json.loads(result):
+            owner = res.get("*fxtl_owner")
+            users_with_access = res.get("*fxtl_users", [])
 
-            # users_with_access = res.get("fxtl_users", [self._user])
-            # owner = res.get("fxtl_owner", self._user)
+            if "everybody" in users_with_access:
+                users_with_access.append(self._user)
 
-            # if self._user != owner and self._user not in users_with_access and not "everybody" in users_with_access:
-            #     continue
-            results.append(res)
+            all_users_with_access = [owner, *users_with_access]
+
+            if self._user in all_users_with_access or not all_users_with_access:
+                results.append(res)
 
         return results
 
@@ -79,8 +91,9 @@ class CalibreDb:
             book_id = int(re.findall(b"\d+", result)[0])
         except Exception as error:
             raise RuntimeError(f"Unexpected response when calling 'calibredb add': {result}") from error
-        # result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_owner", str(book_id), ",".join(users or [self._user]), *self._get_auth()])
-        # print("Calibredb set_custom output", result)
+        result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_owner", str(book_id), ",".join(users or [self._user]), *self._get_auth()])
+        result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_users", str(book_id), "", *self._get_auth()])
+        print("Calibredb set_custom output", result)
         return book_id
 
     def update_metadata(self, book_id: int, metadata: FxtlMetaData):
@@ -95,7 +108,6 @@ class CalibreDb:
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
             result = subprocess.check_output(["calibredb", "export", "--dont-update-metadata", "--dont-save-extra-files", "--dont-write-opf", "--dont-save-cover", "--formats", format, "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
-            print("===", list(the_dir.glob("*")))
             the_book = next(the_dir.glob("*"))
             return mimetypes.guess_type(the_book)[0], the_book.read_bytes()
 

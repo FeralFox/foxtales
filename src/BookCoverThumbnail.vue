@@ -31,15 +31,8 @@ export default {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-  width: 15em;
-  height: 21em;
-  font-size: 140%;
-}
-@media (max-width: 640px) {
-  .book_card {
-    width: 10em;
-    height: 16em;
-    font-size: 100%;
-  }
+  width: 10em;
+  height: 16em;
+  font-size: 100%;
 }
 </style>

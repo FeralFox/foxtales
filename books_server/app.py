@@ -186,13 +186,8 @@ def load_default_data():
 if not LIBRARY_PATH.exists() or not (LIBRARY_PATH / "metadata.db").exists():
     print(f"Didn't find {LIBRARY_PATH}/metadata.db. Copy default library.")
     load_default_data()
+    CalibreDb(None, None, None)._upgrade_library()
     create_user(DEFAULT_USER, DEFAULT_PASSWORD)
     print("~~~ INITIAL SETUP DONE ~~~")
 
-
-def run_calibre_server():
-    os.system("calibre-server --userdb '/config/Calibre Library/users.sqlite' --enable-auth '/config/Calibre Library' --port 8080")
-
-
-threading.Thread(target=run_calibre_server).start()
 uvicorn.run(app, host="0.0.0.0", port=8000)

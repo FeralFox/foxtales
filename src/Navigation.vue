@@ -18,9 +18,10 @@
   display: flex;
   flex-direction: column;
   letter-spacing: 0.7px;
-  width: 5rem;
-  min-width: 5rem;
+  width: 4rem;
+  min-width: 4rem;
   text-align:center;
+  font-size: 90%;
 }
 .navigation a {
   font-weight: bold;
