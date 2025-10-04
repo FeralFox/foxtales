@@ -1,17 +1,13 @@
 <template>
   <div class="book_card">
     <div
+        class="book_cover"
         :style="{
               backgroundImage: image,
-              backgroundSize: 'cover',
-              width: '100%',
-              height: 'calc(100% - 2rem)',
-              border: '1px solid #000',
-              borderRadius: '5px',
-              marginBottom: '5px'
             }"
     ></div>
-    <span style="margin-left: 0.5rem;font-weight: bold;">{{ book.title }}</span>
+    <div class="full-title"><div class="episode-title">{{ truncated_title.title }}</div><div v-if="truncated_title.episode" class="episode-label">
+      {{ truncated_title.episode }}</div></div>
   </div>
 </template>
 <script>
@@ -20,6 +16,19 @@ export default {
   props: {
     book: {},
     image: ""
+  },
+  computed: {
+    truncated_title() {
+      const title = this.book && this.book.title ? String(this.book.title) : '';
+      let episode_index = title.search(/\d+$/);
+      if (episode_index !== -1) {
+        return {
+          title: title.slice(0, episode_index),
+          episode: title.slice(episode_index, title.length)
+        }
+      }
+      return {title: title, episode: ''}
+    }
   }
 }
 </script>
@@ -34,5 +43,29 @@ export default {
   width: 10em;
   height: 16em;
   font-size: 100%;
+}
+.book_cover {
+
+  background-size: cover;
+  width: 100%;
+  height: calc(100% - 2rem);
+  border: 1px solid #000;
+  border-radius: 5px;
+  margin-bottom: 5px
+}
+.episode-title {
+  font-weight: bold;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.episode-label {
+  width: 1rem;
+  margin-left:0.2rem;
+}
+
+.full-title {
+  display: flex;
 }
 </style>
