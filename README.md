@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="public/logo_full_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="public/logo_full.png">
-  <img alt="Fallback image description" src="public/logo_full.png">
+  <source media="(prefers-color-scheme: dark)" srcset="public/icons/logo_full_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="public/icons/logo_full.png">
+  <img alt="Fallback image description" src="public/icons/logo_full.png">
 </picture>
 
 Foxtales is an ebook reader, written as a Progressive Web App.
@@ -18,7 +18,7 @@ are prepared and considered during the development:
 * Easy to self-host
 * Sync of reading progress across devices
 * Multiple users
-* Support Calibre Content Server (for now it brings its own)
+* Support Calibre library format
 
 ## Supported file formats
 
@@ -36,18 +36,18 @@ The Docker container is tested on a Raspberry Pi.
 
 ## Roadmap and planned features
 
-| Feature                                | Status      |
-|----------------------------------------|-------------|
-| Provide Docker container               | In Progress |
-| Implement pagination for big libraries | Planned     |
-| Sync reading progress                  | Prepared    |
-| Multi-User                             | Prepared    |
-| Implement search features              | Planned     |
-| Browse books by tags                   | Planned     |
-| Wishlist books                         | Planned     |
-| Add book discovery                     | Planned     |
-| Online Demo                            | Planned     |
-| Annotations                            | Planned     |
+| Feature                                | Status   |
+|----------------------------------------|----------|
+| Provide Docker container               | Done     |
+| Implement pagination for big libraries | Planned  |
+| Sync reading progress                  | Prepared |
+| Multi-User                             | Prepared |
+| Implement search features              | Planned  |
+| Browse books by tags                   | Planned  |
+| Wishlist books                         | Planned  |
+| Add book discovery                     | Planned  |
+| Online Demo                            | Planned  |
+| Annotations                            | Planned  |
 
 ## Contributions
 * Based on https://github.com/jinhuan138/vue-book-reader
