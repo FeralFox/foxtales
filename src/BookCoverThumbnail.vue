@@ -44,8 +44,16 @@ export default {
   height: 16em;
   font-size: 100%;
 }
-.book_cover {
 
+@media (max-width: 640px) {
+  .book_card {
+    width: 7em;
+    height: 11em;
+    font-size: 90%;
+  }
+}
+
+.book_cover {
   background-size: cover;
   width: 100%;
   height: calc(100% - 2rem);
@@ -67,6 +75,8 @@ export default {
   font-weight: bold;
   padding: 0 6px;
   border-radius: 5px;
+  display: flex;
+  align-items: center;
 }
 
 .full-title {

@@ -1,5 +1,5 @@
 services:
-  foxtale:
+  foxtales:
     image: registry.gitlab.com/pyfox/foxtales
     ports:
       - "8000:8000"
