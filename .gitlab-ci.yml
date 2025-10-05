@@ -28,8 +28,10 @@ test_stage:
     GIT_TRACE: "true"
     GIT_CURL_VERBOSE: "true"
   stage: test_stage
-  dependencies:
-    - build_frontend
+  needs: ["build_frontend"]
+  cache: {}
+#  dependencies:
+#    - build_frontend
   script:
     - ls -la dist/
 
