@@ -1,5 +1,13 @@
 <template>
   <Navigation active="library"/>
+  <ContextMenu
+      v-model="displayBookContextMenu"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :title="displayBookContextMenu?.title"
+  >
+    <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">Download to Device</ContextMenuItem>
+  </ContextMenu>
   <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto">
     <div class="book_card">
       <div class="upload-book">
@@ -15,7 +23,8 @@
       </div>
       <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
     </div>
-    <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)" style="cursor: pointer; position: relative">
+    <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
+         @contextmenu="openContextMenu($event, book)" style="cursor: pointer; position: relative">
       <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
         <div class="progress-container">
           <div class="progress-label">Download... {{ downloadProgress }}%</div>
@@ -118,6 +127,10 @@ import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
 import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
 import {authHeaders, URL} from "./constants"
+import IconTrashBin from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg";
+import ContextMenu from "./components/ContextMenu.vue"
+import ContextMenuItem from "./components/ContextMenuItem.vue";
+import IconDownload from "../public/icons/download-svgrepo-com.svg"
 
 
 async function fetchAsync(url: string) {
@@ -142,6 +155,19 @@ const downloadError = ref('')
 const isUploading = ref(false)
 const uploadProgress = ref(0)
 const uploadError = ref('')
+
+const displayBookContextMenu = ref<any>(null)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+
+function openContextMenu(event: MouseEvent, book: any) {
+  event.preventDefault()
+  // position near click with simple viewport clamping
+  const menuW = 200, menuH = 120
+  contextMenuX.value = Math.max(0, Math.min(event.clientX, window.innerWidth - menuW))
+  contextMenuY.value = Math.max(0, Math.min(event.clientY, window.innerHeight - menuH))
+  displayBookContextMenu.value = book
+}
 
 async function uploadFile(event: Event) {
   const input = event.target as HTMLInputElement
@@ -213,6 +239,7 @@ async function uploadFile(event: Event) {
 
 async function downloadBook(identifier: string) {
   // reset and show overlay for this book
+  displayBookContextMenu.value = null;
   downloadingId.value = identifier
   downloadProgress.value = 0
   downloadError.value = ''
