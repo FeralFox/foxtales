@@ -121,7 +121,11 @@ import {authHeaders, URL} from "./constants"
 
 
 async function fetchAsync(url: string) {
-  const response = await fetch(url, { headers: authHeaders() })
+  const response = await fetch(url, {headers: authHeaders()})
+  if (response.status === 401) {
+    window.location.hash="#/login"
+    throw "Authorization error - forward to login page."
+  }
   return await response.json()
 }
 
