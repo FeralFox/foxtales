@@ -21,8 +21,8 @@ cache:
 build_image:
   stage: build_image
   image: jdrouet/docker-with-buildx:stable
-  dependencies:
-    - build_frontend  # This ensures artifacts are downloaded
+#  dependencies:
+#    - build_frontend  # This ensures artifacts are downloaded
   variables:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_DRIVER: overlay2
