@@ -7,7 +7,6 @@ stages:
 
 cache:
   paths:
-    - node_modules/
     - dist/
 
 build_frontend:
