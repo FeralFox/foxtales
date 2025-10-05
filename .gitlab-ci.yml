@@ -6,9 +6,6 @@ stages:
 build_image:
   stage: build_image
   image: jdrouet/docker-with-buildx:stable
-  dependencies:
-    - build_frontend  # This ensures artifacts are downloaded
-    - test_stage
   variables:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_DRIVER: overlay2
