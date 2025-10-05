@@ -8,12 +8,14 @@
       @click.stop
       @contextmenu.prevent
     >
-      <div class="context-menu-title"><b>{{
+      <div class="context-menu-title">
+        {{
           // @ts-ignore
           displayBookContextMenu.title!
-        }}</b></div>
+        }}
+      </div>
       <button class="context-menu-item" @click="deleteBook(displayBookContextMenu)">
-        🗑️ Delete from device
+        <IconTrashBin /> Delete from device
       </button>
     </div>
 
@@ -75,18 +77,24 @@
 }
 .context-menu-item:hover { background: rgba(0,0,0,0.04); }
 .context-menu-item:active { transform: translateY(1px); }
+.context-menu-item svg {
+  width:1.4em;
+  height:1.4em;
+  color: #000a;
+}
 
 @keyframes cm-fade-in {
-  from { opacity: 0; transform: translateY(2px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0;}
+  to { opacity: 1; }
 }
 </style>
 
 <script setup lang="ts">
 import {onMounted, onBeforeUnmount, ref} from 'vue'
-import {getValuesFromIndexedDB, loadFromIndexedDB} from './dbaccess'
+import {deleteFromIndexedDB, getValuesFromIndexedDB, loadFromIndexedDB} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
+import IconTrashBin from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg"
 
 const displayBookContextMenu = ref<any>(null)
 const contextMenuX = ref(0)
@@ -101,9 +109,11 @@ function openContextMenu(event: MouseEvent, book: any) {
   displayBookContextMenu.value = book
 }
 
-function deleteBook(book: any) {
-  // TODO: Delete from Device
+async function deleteBook(book: any) {
   displayBookContextMenu.value = null
+  await deleteFromIndexedDB("books", "books", book.id.toString())
+  await deleteFromIndexedDB("data", "data", book.id.toString())
+  await loadOfflineBooks();
 }
 
 function closeModal() {

@@ -1,4 +1,4 @@
-function deleteFromIndexedDB(storeName: string, identifier: string){
+function deleteFromIndexedDB(storeName: string, tableName: string, identifier: string){
     return new Promise(
         function(resolve, reject) {
             var dbRequest = indexedDB.open(storeName);
@@ -16,8 +16,8 @@ function deleteFromIndexedDB(storeName: string, identifier: string){
             dbRequest.onsuccess = function(event: any) {
                 // @ts-ignore
                 var database      = event.target.result;
-                var transaction   = database.transaction([storeName], 'readwrite');
-                var objectStore   = transaction.objectStore(storeName);
+                var transaction   = database.transaction([tableName], 'readwrite');
+                var objectStore   = transaction.objectStore(tableName);
                 // @ts-ignore
                 var objectRequest = objectStore.delete(identifier);
 
