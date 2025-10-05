@@ -25,6 +25,7 @@ are prepared and considered during the development:
 * epub
 * pdf
 * cbz
+* mobi
 
 ## Technical stuff
 

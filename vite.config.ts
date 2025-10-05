@@ -18,7 +18,7 @@ export default defineConfig({
             manifest: {
                 name: 'Foxtales Ebook Library',
                 short_name: 'Foxtales',
-                description: 'An ebook library and reader',
+                description: 'An ebook library and reader.',
                 theme_color: '#fff',
                 background_color: '#fff',
                 display: 'standalone',
