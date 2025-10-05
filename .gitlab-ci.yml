@@ -1,39 +1,39 @@
 image: node:20.12.2
 
 stages:
-#  - build_frontend
+  - build_frontend
   - build_image
 
 cache:
   paths:
     - node_modules/
 
-#build_frontend:
-#  stage: build_frontend
-#  script:
-#    - CI=true npm install
-#    - CI=true npm run build
-#  artifacts:
-#    paths:
-#      - dist
-#    expire_in: 1 hour
+build_frontend:
+  stage: build_frontend
+  script:
+    - CI=true npm install
+    - CI=true npm run build
+  artifacts:
+    paths:
+      - dist
+    expire_in: 1 hour
 
 build_image:
   stage: build_image
   image: jdrouet/docker-with-buildx:stable
-#  dependencies:
-#    - build_frontend  # This ensures artifacts are downloaded
+  dependencies:
+    - build_frontend  # This ensures artifacts are downloaded
   variables:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_DRIVER: overlay2
   services:
     - docker:dind
-  artifacts:
-    paths:
-      - dist
+#  artifacts:
+#    paths:
+#      - dist
   script:
-    - CI=true npm install
-    - CI=true npm run build
+#    - #CI=true npm install
+#    - CI=true npm run build
     - ls -la dist/  # Verify the dist folder is available
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $CI_REGISTRY_IMAGE:latest || true
