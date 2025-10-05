@@ -24,7 +24,6 @@ export default defineConfig({
                 display: 'standalone',
                 scope: '/',
                 start_url: '/',
-                orientation: 'any',
                 icons: [
                     {
                         src: '/icons/logo192.png',
