@@ -1,3 +1,10 @@
+FROM node:20.16.0 AS fe_builder
+COPY package.json .
+COPY package-lock.json .
+RUN CI=true npm install
+COPY . .
+RUN CI=true npm run build
+
 FROM linuxserver/calibre:8.10.0
 
 RUN useradd --user-group --system --create-home --no-log-init nightowl
@@ -13,8 +20,8 @@ COPY books_server/requirements.txt .
 RUN python -m venv venv
 RUN ./venv/bin/pip install -r requirements.txt
 
-COPY dist ./client
 COPY books_server/ .
+COPY --from=fe_builder dist ./client
 
 ENV S6_KEEP_ENV=1
 CMD ["./venv/bin/python", "app.py"]

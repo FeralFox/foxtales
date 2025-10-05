@@ -1,39 +1,7 @@
 image: node:20.16.0
 
 stages:
-  - build_frontend
-  - test_stage
   - build_image
-
-cache:
-  paths:
-    - dist/
-
-build_frontend:
-  stage: build_frontend
-  script:
-    - CI=true npm install
-    - CI=true npm run build
-    - echo "Build completed, dist size:"
-    - du -sh dist/
-  artifacts:
-    paths:
-      - dist
-    expire_in: 1 hour
-
-test_stage:
-  variables:
-    CI_DEBUG_TRACE: "true"  # Most detailed output
-    DEBUG: "true"
-    GIT_TRACE: "true"
-    GIT_CURL_VERBOSE: "true"
-  stage: test_stage
-  needs: ["build_frontend"]
-  cache: {}
-#  dependencies:
-#    - build_frontend
-  script:
-    - ls -la dist/
 
 build_image:
   stage: build_image
@@ -47,7 +15,6 @@ build_image:
   services:
     - docker:dind
   script:
-    - ls -la dist/  # Verify the dist folder is available
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $CI_REGISTRY_IMAGE:latest || true
     - docker buildx create --use
