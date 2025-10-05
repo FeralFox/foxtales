@@ -22,10 +22,12 @@ are prepared and considered during the development:
 
 ## Supported file formats
 
-* epub
-* pdf
-* cbz
-* mobi
+* PDF
+* EPUB
+* CBZ
+* MOBI
+* KF8 (AZW3)
+* FB2
 
 ## Technical stuff
 
