@@ -7,12 +7,15 @@ stages:
 cache:
   paths:
     - node_modules/
+    - dist/
 
 build_frontend:
   stage: build_frontend
   script:
     - CI=true npm install
     - CI=true npm run build
+    - echo "Build completed, dist size:"
+    - du -sh dist/
   artifacts:
     paths:
       - dist
@@ -20,25 +23,36 @@ build_frontend:
 
 build_image:
   stage: build_image
-  image: jdrouet/docker-with-buildx:stable
+  services:
+    - name: docker:20.10.11-dind
+      alias: docker
   dependencies:
     - build_frontend  # This ensures artifacts are downloaded
-  variables:
-    DOCKER_HOST: tcp://docker:2375/
-    DOCKER_DRIVER: overlay2
-  services:
-    - docker:dind
-#  artifacts:
-#    paths:
-#      - dist
+  image: docker:20.10.11
   script:
-#    - #CI=true npm install
-#    - CI=true npm run build
     - ls -la dist/  # Verify the dist folder is available
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker pull $CI_REGISTRY_IMAGE:latest || true
-    - docker buildx create --use
-    - docker buildx build --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest --platform linux/amd64 --tag $CI_REGISTRY_IMAGE:latest --push .
+    - docker build -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
+
+#build_image:
+#  stage: build_image
+#  image: jdrouet/docker-with-buildx:stable
+#  dependencies:
+#    - build_frontend  # This ensures artifacts are downloaded
+#  variables:
+#    DOCKER_HOST: tcp://docker:2375/
+#    DOCKER_DRIVER: overlay2
+#  services:
+#    - docker:dind
+#  script:
+##    - #CI=true npm install
+##    - CI=true npm run build
+#    - ls -la dist/  # Verify the dist folder is available
+#    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+#    - docker pull $CI_REGISTRY_IMAGE:latest || true
+#    - docker buildx create --use
+#    - docker buildx build --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest --platform linux/amd64 --tag $CI_REGISTRY_IMAGE:latest --push .
     # uncomment next line to build for ARM
     #- docker buildx build --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $CI_REGISTRY_IMAGE:latest --platform linux/arm64/v8,linux/amd64 --tag $CI_REGISTRY_IMAGE:latest --push .
     # For tags: add -t $CI_REGISTRY_IMAGE:${CI_COMMIT_TAG}
