@@ -6,9 +6,11 @@
       :y="contextMenuY"
       :title="displayBookContextMenu?.title"
   >
-    <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">Download to Device</ContextMenuItem>
+    <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">Download to Device
+    </ContextMenuItem>
   </ContextMenu>
-  <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto" @scroll="onScroll" ref="book-container">
+  <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto" @scroll="onScroll"
+       ref="book-container">
     <div class="book_card" ref="upload-book">
       <div class="upload-book">
         <IconAddBook class="add-book-icon"/>
@@ -60,7 +62,7 @@ const bookContainer = useTemplateRef('book-container')
 async function fetchAsync(url: string) {
   const response = await fetch(url, {headers: authHeaders()})
   if (response.status === 401) {
-    window.location.hash="#/login"
+    window.location.hash = "#/login"
     throw "Authorization error - forward to login page."
   }
   return await response.json()
@@ -103,71 +105,71 @@ async function uploadFile(event: Event) {
     const formData = new FormData()
     formData.append('file', file)
 
-  // Reset state
-  isUploading.value = true
-  uploadProgress.value = 0
-  uploadError.value = ''
+    // Reset state
+    isUploading.value = true
+    uploadProgress.value = 0
+    uploadError.value = ''
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('PUT', `${URL}/add_book`)
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', `${URL}/add_book`)
 
-      // Set auth headers from authHeaders()
-      const headers = authHeaders()
-      if (headers instanceof Headers) {
-        headers.forEach((value, key) => xhr.setRequestHeader(key, value))
-      } else if (Array.isArray(headers)) {
-        headers.forEach(([key, value]) => xhr.setRequestHeader(key, value))
-      } else if (headers && typeof headers === 'object') {
-        Object.entries(headers).forEach(([key, value]) => {
-          if (typeof value === 'string') xhr.setRequestHeader(key, value)
-        })
-      }
-
-      // Progress events
-      xhr.upload.onprogress = (e: ProgressEvent) => {
-        if (e.lengthComputable) {
-          const progressAllFiles = currentBook / totalBooks
-          const progressCurrentFile = (e.loaded / e.total);
-          const totalProgress = progressAllFiles + (progressCurrentFile * progressOneBook)
-          uploadProgress.value = Math.min(100, Math.round((totalProgress) * 100));
+        // Set auth headers from authHeaders()
+        const headers = authHeaders()
+        if (headers instanceof Headers) {
+          headers.forEach((value, key) => xhr.setRequestHeader(key, value))
+        } else if (Array.isArray(headers)) {
+          headers.forEach(([key, value]) => xhr.setRequestHeader(key, value))
+        } else if (headers && typeof headers === 'object') {
+          Object.entries(headers).forEach(([key, value]) => {
+            if (typeof value === 'string') xhr.setRequestHeader(key, value)
+          })
         }
-      }
 
-      xhr.onload = () => {
-        // Accept 200-299 range
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve()
-        } else {
-          reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`))
+        // Progress events
+        xhr.upload.onprogress = (e: ProgressEvent) => {
+          if (e.lengthComputable) {
+            const progressAllFiles = currentBook / totalBooks
+            const progressCurrentFile = (e.loaded / e.total);
+            const totalProgress = progressAllFiles + (progressCurrentFile * progressOneBook)
+            uploadProgress.value = Math.min(100, Math.round((totalProgress) * 100));
+          }
         }
+
+        xhr.onload = () => {
+          // Accept 200-299 range
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve()
+          } else {
+            reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`))
+          }
+        }
+
+        xhr.onerror = () => reject(new Error('Network error during upload'))
+        xhr.onabort = () => reject(new Error('Upload aborted'))
+
+        xhr.send(formData)
+      })
+
+      await loadBooks(0, true)
+    } catch (e: any) {
+      console.error(e)
+      uploadError.value = e?.message || 'Upload failed'
+    } finally {
+      // clear the file input so the same file can be selected again if needed
+      currentBook += 1
+      if (input) input.value = ''
+      // small delay to let user see 100%
+      if (currentBook === totalBooks) {
+        setTimeout(() => {
+          isUploading.value = false
+          uploadProgress.value = 0
+        }, 400)
       }
-
-      xhr.onerror = () => reject(new Error('Network error during upload'))
-      xhr.onabort = () => reject(new Error('Upload aborted'))
-
-      xhr.send(formData)
-    })
-
-    await loadBooks(0, true)
-  } catch (e: any) {
-    console.error(e)
-    uploadError.value = e?.message || 'Upload failed'
-  } finally {
-    // clear the file input so the same file can be selected again if needed
-    currentBook += 1
-    if (input) input.value = ''
-    // small delay to let user see 100%
-    if (currentBook === totalBooks) {
-      setTimeout(() => {
-        isUploading.value = false
-        uploadProgress.value = 0
-      }, 400)
     }
   }
 }
-  }
 
 async function downloadBook(identifier: string) {
   // reset and show overlay for this book
@@ -216,7 +218,7 @@ async function downloadBook(identifier: string) {
     })
 
     // Download cover (small) - no progress bar necessary
-    const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`, { headers: authHeaders() })
+    const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`, {headers: authHeaders()})
     const coverBase64 = await cover.text()
 
     // Save all to IndexedDB
@@ -246,11 +248,12 @@ async function loadBooks(start_from: number, initialFetch?: boolean) {
   const map: Record<string, string> = {}
   await Promise.all(fetchedBooks.map(async (b: any) => {
     try {
-      const resp = await fetch(`${URL}/get_book_cover?book_id=${b.id}&data_url=true`, { headers: authHeaders() })
+      const resp = await fetch(`${URL}/get_book_cover?book_id=${b.id}&data_url=true`, {headers: authHeaders()})
       if (resp.ok) {
         map[b.id] = await resp.text()
       }
-    } catch {}
+    } catch {
+    }
   }))
   if (start_from === 0) {
     books.value = fetchedBooks
@@ -267,16 +270,21 @@ async function loadBooks(start_from: number, initialFetch?: boolean) {
   }
   scrollEventDisabled = false
 }
+
 let scrollEventDisabled = false;
 
 
 function onScroll() {
-  if (scrollEventDisabled) {return}
-  let maxScrollHeight = bookContainer.value!.scrollHeight  - bookContainer.value!.clientHeight;
+  if (scrollEventDisabled) {
+    return
+  }
+  let maxScrollHeight = bookContainer.value!.scrollHeight - bookContainer.value!.clientHeight;
   let scrollHeight = bookContainer.value!.scrollTop
   let scrollBottom = maxScrollHeight - scrollHeight
   if (scrollBottom < 200) {
-    if (scrollEventDisabled) {return}
+    if (scrollEventDisabled) {
+      return
+    }
     scrollEventDisabled = true
     loadBooks(books.value.length, false)
   }
@@ -357,7 +365,7 @@ onMounted(() => {
 .download-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.8);
+  background: rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
