@@ -24,7 +24,7 @@
       <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
     </div>
     <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
-         @contextmenu="openContextMenu($event, book)" style="cursor: pointer; position: relative">
+         @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
       <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
         <div class="progress-container">
           <div class="progress-label">Download... {{ downloadProgress }}%</div>
@@ -42,84 +42,6 @@
   </div>
 </template>
 
-<style>
-.add-book-icon {
-  height: 50%;
-  width: 50%;
-  padding-bottom: 1rem;
-  color: #777;
-}
-
-.file-upload {
-  height: 100%;
-  width: 100%;
-  opacity: 0;
-  position: absolute;
-  top: 0;
-  left: 0;
-  cursor: pointer;
-}
-
-.upload-book {
-  position: relative;
-  width: 100%;
-  height: calc(100% - 2rem);
-  border: 2px dashed #0009;
-  border-radius: 5px;
-  margin-bottom: 5px;
-  color: #0009;
-  display: flex;
-  justify-content: center;
-  flex-direction: column;
-  align-items: center;
-  font-weight: bold;
-  cursor: pointer
-}
-
-.progress-container {
-  width: 80%;
-}
-
-.progress-label {
-  font-weight: normal;
-  color: #555;
-  margin-bottom: 0.25rem;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #eee;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: #4caf50;
-  width: 0%;
-  transition: width 0.2s ease;
-}
-
-.upload-error {
-  color: #b00020;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-
-.download-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  z-index: 1;
-  text-align: center;
-}
-</style>
-
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
 import {saveToIndexedDB} from './dbaccess'
@@ -127,7 +49,6 @@ import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
 import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
 import {authHeaders, URL} from "./constants"
-import IconTrashBin from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg";
 import ContextMenu from "./components/ContextMenu.vue"
 import ContextMenuItem from "./components/ContextMenuItem.vue";
 import IconDownload from "../public/icons/download-svgrepo-com.svg"
@@ -161,11 +82,8 @@ const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 
 function openContextMenu(event: MouseEvent, book: any) {
-  event.preventDefault()
-  // position near click with simple viewport clamping
-  const menuW = 200, menuH = 120
-  contextMenuX.value = Math.max(0, Math.min(event.clientX, window.innerWidth - menuW))
-  contextMenuY.value = Math.max(0, Math.min(event.clientY, window.innerHeight - menuH))
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
   displayBookContextMenu.value = book
 }
 
@@ -323,3 +241,82 @@ onMounted(() => {
   loadBooks()
 })
 </script>
+
+
+<style>
+.add-book-icon {
+  height: 50%;
+  width: 50%;
+  padding-bottom: 1rem;
+  color: #777;
+}
+
+.file-upload {
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+}
+
+.upload-book {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 2rem);
+  border: 2px dashed #0009;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  color: #0009;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  font-weight: bold;
+  cursor: pointer
+}
+
+.progress-container {
+  width: 80%;
+}
+
+.progress-label {
+  font-weight: normal;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #4caf50;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+.upload-error {
+  color: #b00020;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.download-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  z-index: 1;
+  text-align: center;
+}
+</style>

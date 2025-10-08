@@ -15,7 +15,7 @@
         :key="book.id"
         :title="book.title"
         @click.stop="goToBook(book.id!)"
-        @contextmenu="openContextMenu($event, book)"
+        @contextmenu.prevent="openContextMenu($event, book)"
         style="cursor: pointer; position: relative">
         <BookCoverThumbnail :book="book" :image="`url(${book.cover})`"/>
       </div>
@@ -42,11 +42,8 @@ const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 
 function openContextMenu(event: MouseEvent, book: any) {
-  event.preventDefault()
-  // position near click with simple viewport clamping
-  const menuW = 200, menuH = 120
-  contextMenuX.value = Math.max(0, Math.min(event.clientX, window.innerWidth - menuW))
-  contextMenuY.value = Math.max(0, Math.min(event.clientY, window.innerHeight - menuH))
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
   displayBookContextMenu.value = book
 }
 

@@ -1,10 +1,11 @@
 <template>
   <div
-    v-if="modelValue"
+    v-if="model"
     class="context-menu"
-    :style="{ left: x + 'px', top: y + 'px' }"
+    :style="{ left: x + 'px', top: y + 'px', transform: `translate(${transformX}px, ${transformY}px)` }"
     @click.stop
     @contextmenu.prevent
+    ref="context-menu"
   >
     <div v-if="title" class="context-menu-title">{{ title }}</div>
         <slot />
@@ -14,17 +15,34 @@
 <script setup lang="ts">
 // Expose a MenuItem sub-component via named export and also as a property on default export using defineExpose is not possible.
 // Consumers can import { MenuItem } from this file or use ContextMenu.MenuItem after Vue resolves component options.
-import { defineComponent, h, onMounted, onBeforeUnmount } from 'vue'
+import {onMounted, onBeforeUnmount, useTemplateRef, watch, nextTick, ref} from 'vue'
+
 
 const props = defineProps<{ 
-  modelValue: boolean | any,
   x: number,
   y: number,
   title?: string
 }>()
-const emit = defineEmits<{ (e: 'update:modelValue', v: any): void }>()
 
-function close() { emit('update:modelValue', null) }
+const transformX = ref(0)
+const transformY = ref(0)
+
+const model = defineModel<boolean | any>()
+
+watch(model, async (newValue, old) => {
+  await nextTick()
+  if (newValue) {
+    let rightEdge = props.x + input.value!.clientWidth + 20;
+    transformX.value = Math.min(0, document.body.clientWidth - rightEdge)
+    let bottomEdge = props.y + input.value!.clientHeight + 10;
+    transformY.value = Math.min(0, document.body.clientHeight - bottomEdge)
+    console.log("d", bottomEdge, transformY.value)
+  }
+})
+
+const input = useTemplateRef('context-menu')
+
+function close() { model.value = null }
 
 let onKey: any, onWinClick: any
 onMounted(() => {
