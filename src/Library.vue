@@ -19,7 +19,7 @@
             <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
           </div>
         </div>
-        <input :disabled="isUploading" class="file-upload" type="file" accept="*" @change="uploadFile"/>
+        <input :disabled="isUploading" class="file-upload" type="file" multiple accept="*" @change="uploadFile"/>
       </div>
       <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
     </div>
@@ -92,11 +92,16 @@ function openContextMenu(event: MouseEvent, book: any) {
 
 async function uploadFile(event: Event) {
   const input = event.target as HTMLInputElement
-  const file = input?.files?.[0]
-  if (!file) return
+  const files = input?.files || []
+  if (files.length === 0) return
 
-  const formData = new FormData()
-  formData.append('file', file)
+  const totalBooks = files.length
+  const progressOneBook = 1 / totalBooks
+  let currentBook = 0;
+
+  for (let file of Object.values(files)) {
+    const formData = new FormData()
+    formData.append('file', file)
 
   // Reset state
   isUploading.value = true
@@ -123,14 +128,16 @@ async function uploadFile(event: Event) {
       // Progress events
       xhr.upload.onprogress = (e: ProgressEvent) => {
         if (e.lengthComputable) {
-          uploadProgress.value = Math.min(100, Math.round((e.loaded / e.total) * 100))
+          const progressAllFiles = currentBook / totalBooks
+          const progressCurrentFile = (e.loaded / e.total);
+          const totalProgress = progressAllFiles + (progressCurrentFile * progressOneBook)
+          uploadProgress.value = Math.min(100, Math.round((totalProgress) * 100));
         }
       }
 
       xhr.onload = () => {
         // Accept 200-299 range
         if (xhr.status >= 200 && xhr.status < 300) {
-          uploadProgress.value = 100
           resolve()
         } else {
           reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`))
@@ -149,14 +156,18 @@ async function uploadFile(event: Event) {
     uploadError.value = e?.message || 'Upload failed'
   } finally {
     // clear the file input so the same file can be selected again if needed
+    currentBook += 1
     if (input) input.value = ''
     // small delay to let user see 100%
-    setTimeout(() => {
-      isUploading.value = false
-      uploadProgress.value = 0
-    }, 400)
+    if (currentBook === totalBooks) {
+      setTimeout(() => {
+        isUploading.value = false
+        uploadProgress.value = 0
+      }, 400)
+    }
   }
 }
+  }
 
 async function downloadBook(identifier: string) {
   // reset and show overlay for this book
