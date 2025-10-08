@@ -125,10 +125,17 @@ async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
 
 
 @app.get("/list_books")
-async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str = "", fields: str = "all"):
-    return list(reversed(current_user.library.list_books(search_query, fields)))
-    # return list(reversed(get_db().list_books(search_query, fields)))
-
+async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current_user)],
+                     search_query: str = "",
+                     fields: str = "all",
+                     max_items: int = -1,
+                     start_from: int = 0):
+    book_list = list(reversed(current_user.library.list_books(search_query, fields)))
+    if start_from:
+        book_list = book_list[start_from:]
+    if max_items:
+        book_list = book_list[:max_items]
+    return book_list
 
 @app.get("/get_book_metadata")
 async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int):

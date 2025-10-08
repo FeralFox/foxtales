@@ -41,7 +41,7 @@ export default {
   text-overflow: ellipsis;
   overflow: hidden;
   width: 10em;
-  height: 16em;
+  height: 17em;
   font-size: 100%;
 }
 

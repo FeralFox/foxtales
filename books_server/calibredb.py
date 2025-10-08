@@ -92,7 +92,6 @@ class CalibreDb:
             raise RuntimeError(f"Unexpected response when calling 'calibredb add': {result}") from error
         result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_owner", str(book_id), ",".join(users or [self._user]), *self._get_auth()])
         result = subprocess.check_output(['calibredb', "set_custom",  "fxtl_users", str(book_id), "", *self._get_auth()])
-        print("Calibredb set_custom output", result)
         return book_id
 
     def update_metadata(self, book_id: int, metadata: FxtlMetaData):

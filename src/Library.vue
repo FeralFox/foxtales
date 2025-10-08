@@ -8,8 +8,8 @@
   >
     <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">Download to Device</ContextMenuItem>
   </ContextMenu>
-  <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto">
-    <div class="book_card">
+  <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto" @scroll="onScroll" ref="book-container">
+    <div class="book_card" ref="upload-book">
       <div class="upload-book">
         <IconAddBook class="add-book-icon"/>
         <div v-if="!isUploading">Upload Book</div>
@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
+import {nextTick, onMounted, ref, useTemplateRef} from 'vue'
 import {saveToIndexedDB} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
@@ -52,6 +52,9 @@ import {authHeaders, URL} from "./constants"
 import ContextMenu from "./components/ContextMenu.vue"
 import ContextMenuItem from "./components/ContextMenuItem.vue";
 import IconDownload from "../public/icons/download-svgrepo-com.svg"
+
+
+const bookContainer = useTemplateRef('book-container')
 
 
 async function fetchAsync(url: string) {
@@ -140,7 +143,7 @@ async function uploadFile(event: Event) {
       xhr.send(formData)
     })
 
-    await loadBooks()
+    await loadBooks(0, true)
   } catch (e: any) {
     console.error(e)
     uploadError.value = e?.message || 'Upload failed'
@@ -221,9 +224,13 @@ async function downloadBook(identifier: string) {
   }
 }
 
-async function loadBooks() {
-  const fetchedBooks = await fetchAsync(`${URL}/list_books`)
-  books.value = fetchedBooks
+const BOOKS_TO_PREFETCH = 20;
+
+async function loadBooks(start_from: number, initialFetch?: boolean) {
+  const fetchedBooks = await fetchAsync(`${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}&start_from=${start_from}`)
+  if (fetchedBooks.length === 0) {
+    return
+  }
   // prefetch covers as data urls (requires auth header)
   const map: Record<string, string> = {}
   await Promise.all(fetchedBooks.map(async (b: any) => {
@@ -234,11 +241,39 @@ async function loadBooks() {
       }
     } catch {}
   }))
-  covers.value = map
+  if (start_from === 0) {
+    books.value = fetchedBooks
+    covers.value = map
+  } else {
+    books.value = [...books.value, ...fetchedBooks]
+    covers.value = {...covers.value, ...map}
+  }
+  await nextTick()
+  let hasScrollBars = bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight;
+  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH;
+  if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
+    await loadBooks(start_from + BOOKS_TO_PREFETCH, true)
+  }
+  scrollEventDisabled = false
+}
+let scrollEventDisabled = false;
+
+
+function onScroll() {
+  if (scrollEventDisabled) {return}
+  let maxScrollHeight = bookContainer.value!.scrollHeight  - bookContainer.value!.clientHeight;
+  let scrollHeight = bookContainer.value!.scrollTop
+  let scrollBottom = maxScrollHeight - scrollHeight
+  if (scrollBottom < 200) {
+    if (scrollEventDisabled) {return}
+    scrollEventDisabled = true
+    loadBooks(books.value.length, false)
+  }
 }
 
+
 onMounted(() => {
-  loadBooks()
+  loadBooks(0, true)
 })
 </script>
 
