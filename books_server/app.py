@@ -3,7 +3,6 @@ import dataclasses
 import os
 import pathlib
 import tempfile
-import threading
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
@@ -19,9 +18,11 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, FxtlMetaData, AuthenticationError
+from calibredb import CalibreDb, FxtlMetaData, AuthenticationError, CalibreListData, FullBookMetadata
 
-LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
+BASE_PATH = pathlib.Path(__file__).parent.parent
+LIBRARY_PATH = pathlib.Path(os.getenv("FOXTALES_LIBRARY_PATH", BASE_PATH / "volume" / "library"))
+CLIENT_DIR = pathlib.Path(os.getenv("FOXTALES_CLIENT_DIR", BASE_PATH / "dist"))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEFAULT_USER = os.getenv("DEFAULT_USER")
 DEFAULT_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD")
@@ -43,11 +44,10 @@ app.add_middleware(
 )
 
 
-DIST_DIR = pathlib.Path("./client")
 
 # Mount static assets
-app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
-app.mount("/icons", StaticFiles(directory=DIST_DIR / "icons"), name="icons")
+app.mount("/assets", StaticFiles(directory=CLIENT_DIR / "assets"), name="assets")
+app.mount("/icons", StaticFiles(directory=CLIENT_DIR / "icons"), name="icons")
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -111,7 +111,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
 # Serve index.html for the root
 @app.get("/")
 async def read_index():
-    return FileResponse(os.path.join(DIST_DIR, "index.html"))
+    return FileResponse(os.path.join(CLIENT_DIR, "index.html"))
 
 
 @app.put("/add_book")
@@ -129,7 +129,7 @@ async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current
                      search_query: str = "",
                      fields: str = "all",
                      max_items: int = -1,
-                     start_from: int = 0):
+                     start_from: int = 0) -> list[CalibreListData]:
     book_list = list(reversed(current_user.library.list_books(search_query, fields)))
     if start_from:
         book_list = book_list[start_from:]
@@ -138,7 +138,7 @@ async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current
     return book_list
 
 @app.get("/get_book_metadata")
-async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int):
+async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int) -> FullBookMetadata:
     return current_user.library.get_book_metadata(book_id)
 
 
@@ -159,7 +159,7 @@ class BookMetaData(BaseModel):
 
 @app.post("/set_book_metadata")
 async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
-    return current_user.library.update_metadata(data.book_id, data.data)
+    return current_user.library.update_fxtl_data(data.book_id, data.data)
 
 
 @app.get("/get_book")
@@ -170,9 +170,9 @@ async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
 # Serve index.html for all other routes (SPA support)
 @app.get("/{path:path}", include_in_schema=False)
 async def serve_spa(path: str):
-    if (DIST_DIR / path).exists():
-        return FileResponse(DIST_DIR / path)
-    return FileResponse(DIST_DIR / "index.html")
+    if (CLIENT_DIR / path).exists():
+        return FileResponse(CLIENT_DIR / path)
+    return FileResponse(CLIENT_DIR / "index.html")
 
 def create_user(username: str, password: str):
     os.system(f'''calibre-debug -c "from calibre.srv.users import *; m = UserManager('/config/Calibre Library/users.sqlite'); m.add_user('{username}', '{password}', readonly=False)"''')
@@ -193,7 +193,7 @@ def load_default_data():
 if not LIBRARY_PATH.exists() or not (LIBRARY_PATH / "metadata.db").exists():
     print(f"Didn't find {LIBRARY_PATH}/metadata.db. Copy default library.")
     load_default_data()
-    CalibreDb(None, None, None)._upgrade_library()
+    CalibreDb(None, None, None).upgrade_library()  # noqa
     create_user(DEFAULT_USER, DEFAULT_PASSWORD)
     print("~~~ INITIAL SETUP DONE ~~~")
 

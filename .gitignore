@@ -24,6 +24,7 @@ lib
 *.sln
 *.sw?
 .yarn
+.env
 
 # vitepress
 docs/.vitepress/cache

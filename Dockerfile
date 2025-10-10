@@ -24,4 +24,6 @@ COPY books_server/ .
 COPY --from=fe_builder dist ./client
 
 ENV S6_KEEP_ENV=1
+ENV FOXTALES_LIBRARY_PATH="/config/Calibre Library"
+ENV FOXTALES_CLIENT_DIR="/home/nightowl/client"
 CMD ["./venv/bin/python", "app.py"]
