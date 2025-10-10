@@ -246,28 +246,22 @@ async function loadBooks(start_from: number, initialFetch?: boolean) {
   }
   // Immediately display all books as soon as they are available.
   if (start_from === 0) {
+    covers.value = {}
     books.value = fetchedBooks
   } else {
     books.value = [...books.value, ...fetchedBooks]
   }
 
   // prefetch covers as data urls (requires auth header)
-  const map: Record<string, string> = {}
   await Promise.all(fetchedBooks.map(async (b: any) => {
     try {
       const resp = await fetch(`${URL}/get_book_cover?book_id=${b.id}&data_url=true`, {headers: authHeaders()})
       if (resp.ok) {
-        map[b.id] = await resp.text()
+        covers.value[b.id] = await resp.text()
       }
     } catch {
     }
   }))
-  // Display the covers
-  if (start_from === 0) {
-    covers.value = map
-  } else {
-    covers.value = {...covers.value, ...map}
-  }
 
   // Wait for all books and covers to be displayed - then render everything - then check if there are scrollbars.
   // Then check if we need to fetch more books to fill the page.
