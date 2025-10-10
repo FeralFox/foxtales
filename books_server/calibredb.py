@@ -16,16 +16,25 @@ LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
 
 
 @dataclasses.dataclass
+class Progress:
+    position: float
+    last_update: float
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Progress":
+        return cls(
+            position=data.get("position", 0),
+            last_update=data.get("last_update", 0),
+        )
+
+
+@dataclasses.dataclass
 class FxtlMetaData:
-    progress: float
-    progress_updated: float
+    progress: Progress
 
     @classmethod
     def from_dict(cls, data: dict):
-        return cls(
-            progress=data.get("progress", 0),
-            progress_updated=data.get("progress_updated", 0),
-        )
+        return cls(progress=Progress.from_dict(data.get("progress", {})))
 
 
 @dataclasses.dataclass
@@ -85,7 +94,6 @@ class CalibreListData:
             fxtl_owner=data.get("*fxtl_owner", ""),
             fxtl_readers=data.get("*fxtl_readers", []),
         )
-
 
 
 @dataclasses.dataclass
@@ -205,7 +213,7 @@ class CalibreDb:
 
     def _retrieve_user_fxtl_data(self, book_id: int) -> FxtlMetaData:
         return self._retrieve_full_fxtl_data(book_id).userdata.get(self._user,
-                                                                   FxtlMetaData(progress_updated=0, progress=0))
+                                                                   FxtlMetaData(Progress(0, 0)))
 
     def update_fxtl_data(self, book_id: int, metadata: FxtlMetaData):
         """Update FxtlMetaData for the user."""
@@ -221,4 +229,4 @@ class CalibreDb:
     def get_book_metadata(self, book_id: int) -> FullBookMetadata:
         data = self.list_books(f"id:{book_id}")[0]
         fxtl_data = self._retrieve_user_fxtl_data(book_id)
-        return {**data, "fxtl": fxtl_data}  # noqa
+        return FullBookMetadata(**data.__dict__, fxtl=fxtl_data)

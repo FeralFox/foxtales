@@ -63,11 +63,11 @@ function closeModal() {
 type BookEntry = {
   id?: string
   cover?: string
-  data: {
-    identifier: string
-    title: string
-    progress?: { lastUpdated?: number }
-    [k: string]: any
+  fxtl: {
+    progress: {
+      position: number,
+      last_update: number
+    },
   }
   [k: string]: any
 }
@@ -78,15 +78,14 @@ async function loadOfflineBooks() {
   try {
     const bks = (await getValuesFromIndexedDB('books', 'books')) as BookEntry[]
     bks.sort((a, b) => {
-      const al = a?.progress?.lastUpdated ?? 0
-      const bl = b?.progress?.lastUpdated ?? 0
+      const al = a?.fxtl.progress.last_update ?? 0
+      const bl = b?.fxtl.progress.last_update ?? 0
       return bl - al
     })
     for (let book of bks) {
       // @ts-ignore
       book.cover = await loadFromIndexedDB('cover', 'cover', book.id!)
     }
-    console.log(bks)
     offlineBooks.value = bks
   } catch (e) {
     console.log(e)

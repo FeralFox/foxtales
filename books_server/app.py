@@ -159,7 +159,7 @@ class BookMetaData(BaseModel):
 
 @app.post("/set_book_metadata")
 async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
-    return current_user.library.update_fxtl_data(data.book_id, data.data)
+    return current_user.library.update_fxtl_data(data.book_id, data.fxtl)
 
 
 @app.get("/get_book")
