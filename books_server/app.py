@@ -50,6 +50,17 @@ app.mount("/assets", StaticFiles(directory=CLIENT_DIR / "assets"), name="assets"
 app.mount("/icons", StaticFiles(directory=CLIENT_DIR / "icons"), name="icons")
 
 
+@dataclasses.dataclass
+class Status:
+    success: bool
+
+
+@dataclasses.dataclass
+class AddBookStatus:
+    book_id: int
+    success: bool
+
+
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -115,13 +126,19 @@ async def read_index():
 
 
 @app.put("/add_book")
-async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], file: UploadFile):
+async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], file: UploadFile) -> AddBookStatus:
     with tempfile.TemporaryDirectory() as tmpdir_str:
         the_dir = pathlib.Path(tmpdir_str)
         the_file = the_dir / file.filename
         the_file.write_bytes(await file.read())
         book_id = current_user.library.add_book(the_file)
-    return book_id
+    return AddBookStatus(book_id=book_id, success=True)
+
+
+@app.get("/remove_book")
+async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int) -> Status:
+    current_user.library.remove_book(book_id)
+    return Status(success=True)
 
 
 @app.get("/list_books")

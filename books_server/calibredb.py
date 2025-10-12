@@ -170,6 +170,10 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_readers", ",".join(users or [self._user]))
         return book_id
 
+    def remove_book(self, book_id: int):
+        """Add a book to Calibre library."""
+        result = subprocess.check_output(['calibredb', "remove",  str(book_id), *self._get_auth()])
+
     def set_custom_value(self, book_id: int, key: str, value: str) -> bytes:
         """Set custom value for a book."""
         return subprocess.check_output(

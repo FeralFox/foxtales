@@ -6,7 +6,11 @@
       :y="contextMenuY"
       :title="displayBookContextMenu?.title"
   >
-    <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">Download to Device
+    <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">
+      Download to Device
+    </ContextMenuItem>
+    <ContextMenuItem @click="removeBook(displayBookContextMenu.id)" :icon="IconRemove">
+      Remove from Library
     </ContextMenuItem>
   </ContextMenu>
   <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto" @scroll="onScroll"
@@ -54,6 +58,7 @@ import {authHeaders, URL} from "./constants"
 import ContextMenu from "./components/ContextMenu.vue"
 import ContextMenuItem from "./components/ContextMenuItem.vue";
 import IconDownload from "../public/icons/download-svgrepo-com.svg"
+import IconRemove from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg"
 
 
 const bookContainer = useTemplateRef('book-container')
@@ -123,7 +128,7 @@ async function uploadFile(event: Event) {
           headers.forEach(([key, value]) => xhr.setRequestHeader(key, value))
         } else if (headers && typeof headers === 'object') {
           Object.entries(headers).forEach(([key, value]) => {
-            if (typeof value === 'string') xhr.setRequestHeader(key, value)
+            xhr.setRequestHeader(key, value)
           })
         }
 
@@ -171,6 +176,21 @@ async function uploadFile(event: Event) {
   }
 }
 
+async function removeBook(identifier: string) {
+  displayBookContextMenu.value = null;
+  const status_removed = await fetchAsync(`${URL}/remove_book?book_id=${identifier}`)
+  // Todo: Add modal to confirm
+  if (status_removed.success) {
+    const newBooks: BookMeta[] = [];
+    for (let book of books.value) {
+      if (book.id !== identifier) {
+        newBooks.push(book)
+      }
+    }
+    books.value = newBooks
+  }
+}
+
 async function downloadBook(identifier: string) {
   // reset and show overlay for this book
   displayBookContextMenu.value = null;
@@ -194,7 +214,7 @@ async function downloadBook(identifier: string) {
         headers.forEach(([key, value]) => xhr.setRequestHeader(key, value))
       } else if (headers && typeof headers === 'object') {
         Object.entries(headers).forEach(([key, value]) => {
-          if (typeof value === 'string') xhr.setRequestHeader(key, value)
+          xhr.setRequestHeader(key, value)
         })
       }
 
@@ -355,7 +375,7 @@ onMounted(() => {
 .progress-bar-fill {
   height: 100%;
   background: #4caf50;
-  width: 0%;
+  width: 0;
   transition: width 0.2s ease;
 }
 
