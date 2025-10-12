@@ -115,6 +115,7 @@ async function uploadFile(event: Event) {
   const totalBooks = files.length
   const progressOneBook = 1 / totalBooks
   let currentBook = 0;
+  uploadProgress.value = 0
 
   for (let file of Object.values(files)) {
     const formData = new FormData()
@@ -122,7 +123,6 @@ async function uploadFile(event: Event) {
 
     // Reset state
     isUploading.value = true
-    uploadProgress.value = 0
     uploadError.value = ''
 
     try {
