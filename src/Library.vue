@@ -9,7 +9,7 @@
     <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">
       Download to Device
     </ContextMenuItem>
-    <ContextMenuItem @click="removeBook(displayBookContextMenu.id)" :icon="IconRemove">
+    <ContextMenuItem @click="confirmRemoveBook(displayBookContextMenu.id)" :icon="IconRemove">
       Remove from Library
     </ContextMenuItem>
   </ContextMenu>
@@ -44,6 +44,17 @@
           :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
       />
 
+    </div>
+    
+    <div v-if="showDeleteModal" class="modal" @click.stop>
+      <div style="font-weight: 600">Remove from Library</div>
+      <div>Are you sure you want to remove this book from your library?</div>
+      <div style="display:flex; gap: 8px; justify-content: flex-end; margin-top: 8px">
+        <button @click="cancelRemoveBook" :disabled="isDeleting" class="btn-ghost">Cancel</button>
+        <button @click="removeBookConfirmed" :disabled="isDeleting" class="btn-danger">
+          {{ isDeleting ? 'Removing…' : 'Remove' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -176,19 +187,39 @@ async function uploadFile(event: Event) {
   }
 }
 
-async function removeBook(identifier: string) {
-  displayBookContextMenu.value = null;
-  const status_removed = await fetchAsync(`${URL}/remove_book?book_id=${identifier}`)
-  // Todo: Add modal to confirm
-  if (status_removed.success) {
-    const newBooks: BookMeta[] = [];
-    for (let book of books.value) {
-      if (book.id !== identifier) {
-        newBooks.push(book)
+const showDeleteModal = ref(false)
+const bookIdPendingDelete = ref<string | null>(null)
+const isDeleting = ref(false)
+
+function confirmRemoveBook(identifier: string) {
+  displayBookContextMenu.value = null
+  bookIdPendingDelete.value = identifier
+  showDeleteModal.value = true
+}
+
+async function removeBookConfirmed() {
+  if (!bookIdPendingDelete.value) return
+  const identifier = bookIdPendingDelete.value
+  isDeleting.value = true
+  try {
+    const status_removed = await fetchAsync(`${URL}/remove_book?book_id=${identifier}`)
+    if (status_removed.success) {
+      const newBooks: BookMeta[] = []
+      for (let book of books.value) {
+        if (book.id !== identifier) newBooks.push(book)
       }
+      books.value = newBooks
     }
-    books.value = newBooks
+  } finally {
+    isDeleting.value = false
+    showDeleteModal.value = false
+    bookIdPendingDelete.value = null
   }
+}
+
+function cancelRemoveBook() {
+  showDeleteModal.value = false
+  bookIdPendingDelete.value = null
 }
 
 async function downloadBook(identifier: string) {

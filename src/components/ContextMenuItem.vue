@@ -5,19 +5,20 @@ defineProps<{
 </script>
 
 <template>
-  <button class="context-menu-item">
+  <div class="context-menu-item">
     <component :is="icon" /> <slot></slot>
-  </button>
+  </div>
 </template>
 
 <style scoped>
 .context-menu-item {
   display: flex;
   align-items: center;
+  box-sizing:border-box;
   gap: 0.5rem;
   width: 100%;
   text-align: left;
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 0.5rem;
   background: transparent;
   border: none;
   border-radius: 8px;

@@ -24,17 +24,98 @@
       top: 50vh;
       left: 50vw;
       transform: translate(-50%, -50%);
-      background: white;
-      border: 1px solid black;
-      padding: 10px;
-      border-radius: 5px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       min-width: 20em;
+      z-index: 1000;
+      background: #fff9;
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.18), 0 2px 4px rgba(0,0,0,0.12);
+      border-radius: 10px;
+      padding: 0.75rem;
+      animation: cm-fade-in 120ms var(--transition-default, ease-in-out) both;
+      backdrop-filter: blur(20px) saturate(140%);
   }
   button {
-      min-height: 3em;
+      --btn-bg: #f6f7f9;
+      --btn-bg-hover: #eef0f3;
+      --btn-bg-active: #e6e9ee;
+      --btn-fg: #222;
+      --btn-border: rgba(0,0,0,0.15);
+      --btn-ring: 0 0 0 3px rgba(0, 120, 215, 0.25);
+      --btn-backdrop-bg: linear-gradient(180deg, #0000, #0001);
+      position: relative    ;
+      overflow: hidden;
+      min-height: 2.6em;
+      padding: 0 1.1em;
+      border-radius: 8px;
+      border: 1px solid var(--btn-border);
+      background: linear-gradient(180deg, var(--btn-bg), #fff);
+      color: var(--btn-fg);
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.08);
+      outline: none;
+      transition: background 120ms ease, box-shadow 120ms ease, transform 60ms ease, color 120ms ease, border-color 120ms ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+  }
+  button:hover:not(:disabled) {
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
+      --btn-backdrop-bg: linear-gradient(180deg, #fff0, #fff2);
+
+  }
+button:after {
+    content: "";
+    position: absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    z-index: 1;
+    background: var(--btn-backdrop-bg);
+}
+  button:active:not(:disabled) {
+      background: linear-gradient(180deg, var(--btn-bg-active), #f8f9fb);
+      transform: translateY(0.5px);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 6px 14px rgba(0,0,0,0.10);
+  }
+  button:focus-visible {
+      box-shadow: var(--btn-ring), 0 1px 2px rgba(0,0,0,0.06), 0 8px 16px rgba(0,0,0,0.08);
+      border-color: rgba(0,120,215,0.55);
+  }
+  button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+  }
+  /* Variants */
+  .btn-primary {
+      --btn-bg: #2563eb; /* indigo-600 */
+      --btn-bg-hover: #1d4ed8;
+      --btn-bg-active: #1e40af;
+      --btn-fg: #fff;
+      --btn-border: rgba(7, 42, 112, 0.35);
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      color: #fff;
+  }
+  .btn-danger {
+      --btn-bg: #dc3545;
+      --btn-bg-hover: #c92a39;
+      --btn-bg-active: #a61e2b;
+      --btn-fg: #fff;
+      --btn-border: rgba(128, 0, 0, 0.35);
+      background: linear-gradient(180deg, #dc3545, #c92a39);
+      color: #fff;
+  }
+  .btn-ghost {
+      --btn-bg: transparent;
+      --btn-bg-hover: rgba(0,0,0,0.04);
+      --btn-bg-active: rgba(0,0,0,0.06);
+      --btn-fg: #222;
+      --btn-border: rgba(0,0,0,0.12);
+      background: var(--btn-bg);
+      box-shadow: none;
   }
   :root {
       --border-horizontal: 10px;
