@@ -73,7 +73,7 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   padding: 0.35rem;
   min-width: 220px;
-  animation: cm-fade-in 120ms var(--transition-default, ease-in-out) both;
+  animation: fade-in 120ms var(--transition-default, ease-in-out) both;
   backdrop-filter: blur(20px) saturate(140%);
 }
 .context-menu::after {
@@ -92,5 +92,4 @@ onBeforeUnmount(() => {
   font-weight: 600;
   pointer-events: none;
 }
-@keyframes cm-fade-in { from { opacity: 0; } to { opacity: 1; } }
 </style>

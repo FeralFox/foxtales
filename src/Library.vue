@@ -43,7 +43,6 @@
           :book="book"
           :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
       />
-
     </div>
     
     <div v-if="showDeleteModal" class="modal" @click.stop>
