@@ -6,7 +6,7 @@
       :style="{ backgroundColor }"
     >
 
-      <button
+      <div
         v-if="showToc"
         class="tocButton"
         :class="{ tocButtonExpanded: expandedToc }"
@@ -15,7 +15,7 @@
       >
         <span class="tocButtonBar" style="top: 35%"></span>
         <span class="tocButtonBar" style="top: 66%"></span>
-      </button>
+      </div>
 
 <!--      <slot name="title">-->
 <!--        <div class="titleArea" :title="title || bookName">-->
@@ -37,8 +37,8 @@
         </template>
       </book-view>
 
-      <button class="arrow pre" @click="pre">‹</button>
-      <button class="arrow next" @click="next">›</button>
+      <div class="arrow pre" @click="pre">‹</div>
+      <div class="arrow next" @click="next">›</div>
     </div>
 
     <div v-if="showToc">
@@ -382,7 +382,7 @@ const setLocation = (href, close = true) => {
   border-radius: 2px;
   outline: none;
   cursor: pointer;
-  z-index:1;
+  z-index:99;
 }
 
 .tocButtonBar {
@@ -416,6 +416,8 @@ const setLocation = (href, close = true) => {
   appearance: none;
   font-weight: normal;
   height: 100%;
+  align-items: center;
+  display: flex;
 }
 
 .arrow:hover {
