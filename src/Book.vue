@@ -31,9 +31,6 @@ const url = ref('')
 const book_metadata = ref('')
 const initialPosition = ref(0)
 
-function getRendition() {}
-
-
 const loadBook = async () => {
   const book_id = window.location.hash.split("?")[1].slice(3)
   const bmm =  await loadFromBookDb("books", book_id)
@@ -53,6 +50,10 @@ const change = (e) => {
   const value = e.target.value
   current.value = value
   view.goToFraction(parseFloat(value / 100))
+}
+
+const getRendition = async (val) => {
+  view = val
 }
 
 const locationChange = async (detail) => {
