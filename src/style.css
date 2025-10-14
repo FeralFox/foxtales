@@ -122,6 +122,8 @@ button:after {
       --padding-top: 10px;
       --padding-bottom: 10px;
       --transition-default: ease-in-out 0.2s;
-      --color-tag: #614630
+      --color-tag: #614630;
+      --primary: #BA411B;
+      --primary-rgb: 186, 65, 27
   }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

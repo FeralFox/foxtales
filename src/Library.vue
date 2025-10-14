@@ -17,13 +17,11 @@
        ref="book-container">
     <div class="book_card" ref="upload-book">
       <div class="upload-book">
-        <IconAddBook class="add-book-icon"/>
+        <IconAddBook v-if="!isUploading" class="add-book-icon"/>
         <div v-if="!isUploading">Upload Book</div>
-        <div v-else class="progress-container">
-          <div class="progress-label">Uploading... {{ uploadProgress }}%</div>
-          <div class="progress-bar">
-            <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
-          </div>
+        <div v-else class="progress-container" style="display:flex;flex-direction:column;align-items:center">
+          <div class="spinner spinner-with-progress" :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(uploadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
+          <div class="progress-label" style="margin-top: 0.5rem">Uploading… {{ uploadProgress }}%</div>
         </div>
         <input :disabled="isUploading" class="file-upload" type="file" multiple accept="*" @change="uploadFile"/>
       </div>
@@ -31,13 +29,11 @@
     </div>
     <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
          @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
-      <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
-        <div class="progress-container">
-          <div class="progress-label">Download... {{ downloadProgress }}%</div>
-          <div class="progress-bar">
-            <div class="progress-bar-fill" :style="{ width: downloadProgress + '%' }"></div>
-          </div>
-        </div>
+      <div v-if="downloadingId === book.id"  class="download-overlay" @click.stop>
+        <div class="spinner spinner-with-progress" :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
+      </div>
+      <div v-if="downloadQueue.includes(book.id)" class="download-overlay" @click.stop>
+        <div class="spinner"></div>
       </div>
       <BookCoverThumbnail
           :book="book"
@@ -91,6 +87,7 @@ interface BookMeta {
 const books = ref<BookMeta[]>([])
 const covers = ref<Record<string, string>>({})
 const downloadingId = ref<string>('')
+const downloadQueue = ref<string[]>([])
 const downloadProgress = ref(0)
 const downloadError = ref('')
 const isUploading = ref(false)
@@ -222,6 +219,11 @@ function cancelRemoveBook() {
 }
 
 async function downloadBook(identifier: string) {
+  if (downloadingId.value) {
+    downloadQueue.value.push(identifier)
+    return
+  }
+
   // reset and show overlay for this book
   displayBookContextMenu.value = null;
   downloadingId.value = identifier
@@ -283,6 +285,10 @@ async function downloadBook(identifier: string) {
     setTimeout(() => {
       downloadingId.value = ''
       downloadProgress.value = 0
+      if (downloadQueue.value.length > 0) {
+        const nextBookToDownload = downloadQueue.value.shift()
+        downloadBook(nextBookToDownload!)
+      }
     }, 400)
   }
 }
@@ -397,14 +403,14 @@ onMounted(() => {
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #eee;
+  background: rgba(var(--primary-rgb), 0.2);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: #4caf50;
+  background: var(--primary);
   width: 0;
   transition: width 0.2s ease;
 }
@@ -420,10 +426,33 @@ onMounted(() => {
   inset: 0;
   background: rgba(255, 255, 255, 0.8);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0.5rem;
   z-index: 1;
   text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 5px solid rgba(var(--primary-rgb), 0.2); /* light ring */
+  border-top-color: rgb(var(--primary-rgb)); /* solid segment */
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  transition: 0.2s ease-in-out;
+}
+
+.spinner-with-progress {
+  position: relative;
+  animation: none;
+  border-color: rgba(var(--primary-rgb), 0.2);
+  transition: 0.2s ease-in-out;
+  mask-image: radial-gradient(circle, transparent 55%, black 56%);
+  mask-composite: exclude; /* for some browsers; harmless where unsupported */
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
