@@ -2,7 +2,9 @@ import base64
 import dataclasses
 import os
 import pathlib
+import subprocess
 import tempfile
+import threading
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
@@ -108,9 +110,10 @@ active_users: dict[str, ActiveUserData] = {}
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     username = form_data.username
     password = form_data.password
+    library = CalibreDb("http://localhost:8080", username, password)
     try:
-        library = CalibreDb("http://localhost:8080", username, password)
-    except AuthenticationError:
+        library.get_custom_columns()  # Check if user is correctly authenticated.
+    except subprocess.CalledProcessError:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token = create_access_token(
         data={"sub": username}, expires_delta=timedelta(minutes=60)
@@ -213,6 +216,11 @@ if not LIBRARY_PATH.exists() or not (LIBRARY_PATH / "metadata.db").exists():
     create_user(DEFAULT_USER, DEFAULT_PASSWORD)
     print("~~~ INITIAL SETUP DONE ~~~")
 
-CalibreDb(None, None, None).upgrade_library()  # noqa
+
+def run_calibre_server():
+    os.system("calibre-server --userdb '/config/Calibre Library/users.sqlite' --enable-auth '/config/Calibre Library' --port 8080")
+
+CalibreDb(LIBRARY_PATH.as_posix(), None, None).upgrade_library()  # noqa
+threading.Thread(target=run_calibre_server).start()
 
 uvicorn.run(app, host="0.0.0.0", port=8000)

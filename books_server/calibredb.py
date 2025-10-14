@@ -108,7 +108,9 @@ class CalibreDb:
         self._password = password
 
     def _get_auth(self):
-        return ['--with-library', LIBRARY_PATH.as_posix()]
+        if self._host == LIBRARY_PATH.as_posix():
+            return ['--with-library', LIBRARY_PATH.as_posix()]
+        return ['--with-library', self._host, "--username", self._user, "--password", self._password]
 
     def upgrade_library(self):
         """Add extra fields required by foxtales to Calibre library."""
