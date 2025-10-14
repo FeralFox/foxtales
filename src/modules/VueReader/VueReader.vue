@@ -105,7 +105,7 @@ const TocComponent = defineComponent({
       toc.value.map((item, index) => {
         return h('div', { key: index }, [
           h(
-            'button',
+            'div',
             {
               class: [
                 'tocAreaButton',
