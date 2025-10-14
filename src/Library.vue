@@ -17,11 +17,13 @@
        ref="book-container">
     <div class="book_card" ref="upload-book">
       <div class="upload-book">
-        <IconAddBook v-if="!isUploading" class="add-book-icon"/>
+        <IconAddBook class="add-book-icon"/>
         <div v-if="!isUploading">Upload Book</div>
-        <div v-else class="progress-container" style="display:flex;flex-direction:column;align-items:center">
-          <div class="spinner spinner-with-progress" :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(uploadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
-          <div class="progress-label" style="margin-top: 0.5rem">Uploading… {{ uploadProgress }}%</div>
+        <div v-else class="progress-container">
+          <div class="progress-label">Uploading... {{ uploadProgress }}%</div>
+          <div class="progress-bar">
+            <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
+          </div>
         </div>
         <input :disabled="isUploading" class="file-upload" type="file" multiple accept="*" @change="uploadFile"/>
       </div>
