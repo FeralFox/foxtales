@@ -16,10 +16,9 @@ export async function syncDbUpdates() {
                 },
                 body: JSON.stringify({
                     book_id: book_id,
-                    fxtl: {progress: progress}
+                    ...progress
                 })
             })
-        console.log("awaited", response)
     }
     await saveToBookDb("db_updates", {}, `update-progress`)
 }

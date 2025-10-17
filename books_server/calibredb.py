@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import functools
 import io
 import json
@@ -8,45 +9,11 @@ import pathlib
 import re
 import subprocess
 import tempfile
-from typing import Optional
+from typing import Optional, Union
 
 import PIL.Image
 
 LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
-
-
-@dataclasses.dataclass
-class Progress:
-    position: float
-    last_update: float
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "Progress":
-        return cls(
-            position=data.get("position", 0),
-            last_update=data.get("last_update", 0),
-        )
-
-
-@dataclasses.dataclass
-class FxtlMetaData:
-    progress: Progress
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(progress=Progress.from_dict(data.get("progress", {})))
-
-
-@dataclasses.dataclass
-class FullFxtlMetaData:
-    userdata: dict[str, FxtlMetaData]
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        userdata = data.get("userdata", {})
-        for key, value in userdata.items():
-            userdata[key] = FxtlMetaData.from_dict(value)
-        return cls(userdata)
 
 
 class AuthenticationError(ValueError):
@@ -71,7 +38,9 @@ class CalibreListData:
     tags: list[str]
     timestamp: str
     fxtl_owner: str
-    fxtl_readers: list[str]
+    fxtl_is_read: bool
+    fxtl_progress: float
+    fxtl_progress_update: str
 
     @classmethod
     def from_dict(cls, data: dict) -> "CalibreListData":
@@ -92,24 +61,25 @@ class CalibreListData:
             tags=data.get("tags", []),
             timestamp=data.get("timestamp", ""),
             fxtl_owner=data.get("*fxtl_owner", ""),
-            fxtl_readers=data.get("*fxtl_readers", []),
+            fxtl_is_read=data.get("*fxtl_is_read", False),
+            fxtl_progress=data.get("*fxtl_progress", 0.0),
+            fxtl_progress_update=data.get("*fxtl_progress_update", datetime.datetime.now().isoformat()),
         )
 
 
 @dataclasses.dataclass
 class FullBookMetadata(CalibreListData):
-    fxtl: FxtlMetaData
-
+    pass
 
 class CalibreDb:
-    def __init__(self, host: str, user: str, password: str):
+    def __init__(self, host: Union[str, pathlib.Path], user: str, password: str):
         self._host = host
         self._user = user
         self._password = password
 
     def _get_auth(self):
-        if self._host == LIBRARY_PATH.as_posix():
-            return ['--with-library', LIBRARY_PATH.as_posix()]
+        if isinstance(self._host, pathlib.Path):
+            return ['--with-library', self._host.as_posix()]
         return ['--with-library', self._host, "--username", self._user, "--password", self._password]
 
     def upgrade_library(self):
@@ -120,8 +90,12 @@ class CalibreDb:
             raise AuthenticationError()
         if not "fxtl_owner" in columns.values():
             self._add_custom_column("fxtl_owner", "Added by", "text", False)
-        if not "fxtl_readers" in columns.values():
-            self._add_custom_column("fxtl_readers", "Users with Access", "text", True)
+        if not "fxtl_progress" in columns.values():
+            self._add_custom_column("fxtl_progress", "Reading Progress", "float", False)
+        if not "fxtl_progress_update" in columns.values():
+            self._add_custom_column("fxtl_progress_update", "Last Reading Progress Update", "datetime", False)
+        if not "fxtl_is_read" in columns.values():
+            self._add_custom_column("fxtl_is_read", "Is Read", "bool", False)
 
     def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
         logging.info(f"Add custom column {name}")
@@ -159,7 +133,9 @@ class CalibreDb:
         except Exception as error:
             raise RuntimeError(f"Unexpected response when calling 'calibredb add': {result}") from error
         self.set_custom_value(book_id, "fxtl_owner", self._user)
-        self.set_custom_value(book_id, "fxtl_readers", ",".join(users or [self._user]))
+        self.set_custom_value(book_id, "fxtl_progress", "0")
+        self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
+        self.set_custom_value(book_id, "fxtl_is_read", "False")
         return book_id
 
     def remove_book(self, book_id: int):
@@ -197,32 +173,6 @@ class CalibreDb:
             image.save(buffer, "jpeg", quality=80)
             return "image/jpeg", buffer.getvalue()
 
-    def _retrieve_full_fxtl_data(self, book_id: int) -> FullFxtlMetaData:
-        try:
-            with tempfile.TemporaryDirectory() as tmpdir_str:
-                the_dir = pathlib.Path(tmpdir_str)
-                subprocess.check_output(["calibredb", "export", "--dont-update-metadata", "--dont-write-opf", "--dont-save-cover", "--formats", "fxtl", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
-                the_book = next((the_dir / "data").glob("*"))
-                return FullFxtlMetaData.from_dict(json.loads(the_book.read_text()))
-        except StopIteration:
-            return FullFxtlMetaData({})
-
-    def _retrieve_user_fxtl_data(self, book_id: int) -> FxtlMetaData:
-        return self._retrieve_full_fxtl_data(book_id).userdata.get(self._user,
-                                                                   FxtlMetaData(Progress(0, 0)))
-
-    def update_fxtl_data(self, book_id: int, metadata: FxtlMetaData):
-        """Update FxtlMetaData for the user."""
-        full_fxtl_data = self._retrieve_full_fxtl_data(book_id)
-        full_fxtl_data.userdata[self._user] = metadata
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            the_dir = pathlib.Path(tmpdir_str)
-            tmp_file = the_dir / "metadata.fxtl"
-            tmp_file.write_text(json.dumps(dataclasses.asdict(full_fxtl_data)))
-            result = self.add_datafile(book_id, tmp_file)
-        return result
-
     def get_book_metadata(self, book_id: int) -> FullBookMetadata:
         data = self.list_books(f"id:{book_id}")[0]
-        fxtl_data = self._retrieve_user_fxtl_data(book_id)
-        return FullBookMetadata(**data.__dict__, fxtl=fxtl_data)
+        return FullBookMetadata(**data.__dict__)

@@ -35,7 +35,7 @@ const loadBook = async () => {
   const book_id = window.location.hash.split("?")[1].slice(3)
   const bmm =  await loadFromBookDb("books", book_id)
   book_metadata.value = bmm
-  initialPosition.value = book_metadata.value.fxtl.progress.position
+  initialPosition.value = book_metadata.value.fxtl_progress
   const blob = await loadFromIndexedDB("data", "data", book_id)
   const format = bmm.formats[0].toLowerCase()
   url.value = new File([blob], `${book_metadata.value.title}.${format}`); //dataURLtoFile(`data:${book_metadata.value.data.mimetype};base64,${book.data}`, `${book_metadata.value.data.title}.cbz`)
@@ -59,18 +59,16 @@ const getRendition = async (val) => {
 const locationChange = async (detail) => {
   let { fraction } = detail
   current.value = Math.floor(fraction * 100)
-  if (fraction !== book_metadata.value.fxtl.progress.position) {
-    const progress = {
-      position: fraction,
-      last_update: new Date().getTime()
-    };
-    book_metadata.value.fxtl.progress = progress
+  if (fraction !== book_metadata.value.fxtl_progress) {
+    const dateUpdate = new Date().toISOString()
+    book_metadata.value.fxtl_progress = fraction
+    book_metadata.value.fxtl_progress_update = dateUpdate
     await saveToBookDb("books", toRaw(book_metadata.value), book_metadata.value.id)
 
     // Need to store explicitly as the user might delete the book from local books before the
     // latest progress is synced.
     const current_updates = await loadFromBookDb("db_updates", "update-progress", {})
-    current_updates[book_metadata.value.id] = progress
+    current_updates[book_metadata.value.id] = {fxtl_progress: fraction, fxtl_progress_update: dateUpdate}
     await saveToBookDb("db_updates", current_updates, `update-progress`)
     syncDbUpdates()
   }

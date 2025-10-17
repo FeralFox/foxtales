@@ -1,5 +1,6 @@
 import base64
 import dataclasses
+import json
 import os
 import pathlib
 import subprocess
@@ -20,7 +21,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, FxtlMetaData, CalibreListData, FullBookMetadata
+from calibredb import CalibreDb, CalibreListData, FullBookMetadata
 
 BASE_PATH = pathlib.Path(__file__).parent.parent
 CLIENT_DIR = pathlib.Path(os.getenv("FOXTALES_CLIENT_DIR", BASE_PATH / "dist"))
@@ -178,13 +179,17 @@ async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_cur
 
 class BookMetaData(BaseModel):
     book_id: int
-    fxtl: FxtlMetaData
+    fxtl_progress: float
+    fxtl_progress_update: str
 
 
 @app.post("/set_book_metadata")
 async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
-    return current_user.library.update_fxtl_data(data.book_id, data.fxtl)
-
+    book_id = data.book_id
+    current_user.library.set_custom_value(book_id, "fxtl_progress",
+                                          str(data.fxtl_progress))
+    current_user.library.set_custom_value(book_id, "fxtl_progress_update",
+                                          data.fxtl_progress_update.replace("Z", "+00:00"))
 
 @app.get("/get_book")
 async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int, format: str):
@@ -224,7 +229,7 @@ def run_calibre_server():
     os.system(f"calibre-server --userdb '{USER_DB_PATH}' --enable-auth --port 8080 "
               f"/config/libraries/users/{DEFAULT_USER}")
 
-CalibreDb(DEFAULT_USER_LIBRARY_PATH.as_posix(), DEFAULT_USER, DEFAULT_PASSWORD).upgrade_library()  # noqa
+CalibreDb(DEFAULT_USER_LIBRARY_PATH.as_posix(), DEFAULT_USER, DEFAULT_PASSWORD).upgrade_library()
 threading.Thread(target=run_calibre_server).start()
 
 uvicorn.run(app, host="0.0.0.0", port=8000)
