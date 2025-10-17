@@ -10,7 +10,9 @@ FROM linuxserver/calibre:8.10.0
 RUN useradd --user-group --system --create-home --no-log-init nightowl
 RUN mkdir /home/nightowl/defaultLibrary
 COPY volume/defaultLibrary /home/nightowl/defaultLibrary
-RUN mkdir /config/Calibre Library
+RUN mkdir /config/libraries
+RUN mkdir /config/libraries/common
+RUN mkdir /config/libraries/users
 RUN chown nightowl: -R /config
 RUN chown nightowl: -R /home/nightowl
 USER nightowl
@@ -24,6 +26,6 @@ COPY books_server/ .
 COPY --from=fe_builder dist ./client
 
 ENV S6_KEEP_ENV=1
-ENV FOXTALES_LIBRARY_PATH="/config/Calibre Library"
+ENV FOXTALES_LIBRARY_PATH="/config/libraries"
 ENV FOXTALES_CLIENT_DIR="/home/nightowl/client"
 CMD ["./venv/bin/python", "app.py"]

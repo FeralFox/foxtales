@@ -148,17 +148,7 @@ class CalibreDb:
         result = subprocess.check_output(['calibredb', 'list', *filter_options, '--fields', fields, '--for-machine', *self._get_auth()])
         results = []
         for res in json.loads(result):
-            owner = res.get("*fxtl_owner")
-            users_with_access = res.get("*fxtl_readers", [])
-
-            if "*" in users_with_access:
-                users_with_access.append(self._user)
-
-            all_users_with_access = [owner, *users_with_access]
-
-            if self._user in all_users_with_access or not all_users_with_access:
-                res["formats"] = [path.rsplit(".", 1)[-1].upper() for path in res.get("formats", [])]
-                results.append(CalibreListData.from_dict(res))
+            results.append(CalibreListData.from_dict(res))
         return results
 
     def add_book(self, book: pathlib.Path, users: Optional[list[str]] = None) -> int:

@@ -20,17 +20,21 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, FxtlMetaData, AuthenticationError, CalibreListData, FullBookMetadata
+from calibredb import CalibreDb, FxtlMetaData, CalibreListData, FullBookMetadata
 
 BASE_PATH = pathlib.Path(__file__).parent.parent
-LIBRARY_PATH = pathlib.Path(os.getenv("FOXTALES_LIBRARY_PATH", BASE_PATH / "volume" / "library"))
 CLIENT_DIR = pathlib.Path(os.getenv("FOXTALES_CLIENT_DIR", BASE_PATH / "dist"))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEFAULT_USER = os.getenv("DEFAULT_USER")
 DEFAULT_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD")
+LIBRARY_PATH = pathlib.Path(os.getenv("FOXTALES_LIBRARY_PATH", BASE_PATH / "volume" / "library"))
+COMMON_LIBRARY_PATH = LIBRARY_PATH / "common"
+DEFAULT_USER_LIBRARY_PATH = LIBRARY_PATH / "users" / DEFAULT_USER
 assert SECRET_KEY, "No SECRET_KEY environment variable provided"
 assert DEFAULT_USER, "No DEFAULT_USER environment variable provided"
 assert DEFAULT_PASSWORD, "No DEFAULT_USER_PASSWORD environment variable provided"
+
+USER_DB_PATH = "/config/libraries/users.sqlite"
 
 app = fastapi.FastAPI()
 origins = ["*"]
@@ -110,7 +114,7 @@ active_users: dict[str, ActiveUserData] = {}
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     username = form_data.username
     password = form_data.password
-    library = CalibreDb("http://localhost:8080", username, password)
+    library = CalibreDb(f"http://localhost:8080/#{username}", username, password)
     try:
         library.get_custom_columns()  # Check if user is correctly authenticated.
     except subprocess.CalledProcessError:
@@ -195,10 +199,10 @@ async def serve_spa(path: str):
     return FileResponse(CLIENT_DIR / "index.html")
 
 def create_user(username: str, password: str):
-    os.system(f'''calibre-debug -c "from calibre.srv.users import *; m = UserManager('/config/Calibre Library/users.sqlite'); m.add_user('{username}', '{password}', readonly=False)"''')
+    os.system(f'''calibre-debug -c "from calibre.srv.users import *; m = UserManager('{USER_DB_PATH}'); m.add_user('{username}', '{password}', readonly=False)"''')
 
 
-def load_default_data():
+def load_default_data(library_path: pathlib.Path):
     default_lib_path = pathlib.Path("/home/nightowl/defaultLibrary")
 
     for file in default_lib_path.rglob("*"):
@@ -206,21 +210,21 @@ def load_default_data():
         if file.is_dir():
             continue
         relative_path = file.relative_to(default_lib_path)
-        new_file = LIBRARY_PATH / relative_path
+        new_file = library_path / relative_path
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_bytes(file.read_bytes())
 
-if not LIBRARY_PATH.exists() or not (LIBRARY_PATH / "metadata.db").exists():
-    print(f"Didn't find {LIBRARY_PATH}/metadata.db. Copy default library.")
-    load_default_data()
+if not DEFAULT_USER_LIBRARY_PATH.exists() or not (DEFAULT_USER_LIBRARY_PATH / "metadata.db").exists():
     create_user(DEFAULT_USER, DEFAULT_PASSWORD)
-    print("~~~ INITIAL SETUP DONE ~~~")
+    load_default_data(DEFAULT_USER_LIBRARY_PATH)
+    print("~~~ Created default user library. ~~~")
 
 
 def run_calibre_server():
-    os.system("calibre-server --userdb '/config/Calibre Library/users.sqlite' --enable-auth '/config/Calibre Library' --port 8080")
+    os.system(f"calibre-server --userdb '{USER_DB_PATH}' --enable-auth --port 8080 "
+              f"/config/libraries/users/{DEFAULT_USER}")
 
-CalibreDb(LIBRARY_PATH.as_posix(), None, None).upgrade_library()  # noqa
+CalibreDb(DEFAULT_USER_LIBRARY_PATH.as_posix(), DEFAULT_USER, DEFAULT_PASSWORD).upgrade_library()  # noqa
 threading.Thread(target=run_calibre_server).start()
 
 uvicorn.run(app, host="0.0.0.0", port=8000)

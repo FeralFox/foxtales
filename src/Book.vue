@@ -87,6 +87,7 @@ const locationChange = async (detail) => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  cursor: pointer;
 }
 
 .progress > input[type='number'] {
