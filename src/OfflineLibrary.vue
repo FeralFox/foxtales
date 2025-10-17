@@ -6,6 +6,9 @@
       :y="contextMenuY"
       :title="displayBookContextMenu?.title"
     >
+      <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
+        Toggle Read Status
+      </ContextMenuItem>
       <ContextMenuItem @click="deleteBook(displayBookContextMenu)" :icon="IconTrashBin">Delete from Device</ContextMenuItem>
     </ContextMenu>
 
@@ -17,6 +20,7 @@
         @click.stop="goToBook(book.id!)"
         @contextmenu.prevent="openContextMenu($event, book)"
         style="cursor: pointer; position: relative">
+        <div v-if="book.fxtl_is_read" class="book-is-read" />
         <BookCoverThumbnail :book="book" :image="`url(${book.cover})`"/>
       </div>
     </div>
@@ -26,20 +30,40 @@
 /* Context menu styles now live in components/ContextMenu.vue */
 .context-menu-item svg { width:1.4em; height:1.4em; color: #000a; }
 
+.book-is-read {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  width: 10px;
+  height: 10px;
+  background: green;
+  border-radius: 50%;
+}
 </style>
 
 <script setup lang="ts">
-import {onMounted, onBeforeUnmount, ref} from 'vue'
-import {deleteFromIndexedDB, getValuesFromIndexedDB, loadFromIndexedDB} from './dbaccess'
+import {onMounted, onBeforeUnmount, ref, toRaw} from 'vue'
+import {deleteFromIndexedDB, getValuesFromIndexedDB, loadFromIndexedDB, saveToBookDb} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
 import IconTrashBin from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg"
 import ContextMenu from "./components/ContextMenu.vue"
 import ContextMenuItem from "./components/ContextMenuItem.vue";
+import IconBookRead from "../public/icons/eye-svgrepo-com.svg";
+import {syncedUpdate} from "./sync";
 
 const displayBookContextMenu = ref<any>(null)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
+
+async function toggleIsRead() {
+  let new_value = !displayBookContextMenu.value.fxtl_is_read;
+  displayBookContextMenu.value.fxtl_is_read = new_value
+  const book = displayBookContextMenu.value
+  displayBookContextMenu.value = null
+  await saveToBookDb("books", toRaw(book), book.id)
+  syncedUpdate("update-read-status", book.id, {fxtl_is_read: new_value})
+}
 
 function openContextMenu(event: MouseEvent, book: any) {
   contextMenuX.value = event.clientX

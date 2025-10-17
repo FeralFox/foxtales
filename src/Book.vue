@@ -25,7 +25,7 @@
 import VueReader from './modules/VueReader/VueReader.vue'
 import {onMounted, ref, toRaw} from 'vue'
 import {loadFromBookDb, loadFromIndexedDB, saveToBookDb} from './dbaccess'
-import {syncDbUpdates} from "./sync";
+import {syncedUpdate} from "./sync";
 
 const url = ref('')
 const book_metadata = ref('')
@@ -67,10 +67,7 @@ const locationChange = async (detail) => {
 
     // Need to store explicitly as the user might delete the book from local books before the
     // latest progress is synced.
-    const current_updates = await loadFromBookDb("db_updates", "update-progress", {})
-    current_updates[book_metadata.value.id] = {fxtl_progress: fraction, fxtl_progress_update: dateUpdate}
-    await saveToBookDb("db_updates", current_updates, `update-progress`)
-    syncDbUpdates()
+    await syncedUpdate("update-progress", book_metadata.value.id, {fxtl_progress: fraction, fxtl_progress_update: dateUpdate});
   }
 }
 </script>

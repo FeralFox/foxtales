@@ -9,6 +9,9 @@
     <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">
       Download to Device
     </ContextMenuItem>
+    <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
+      Toggle Read Status
+    </ContextMenuItem>
     <ContextMenuItem @click="confirmRemoveBook(displayBookContextMenu.id)" :icon="IconRemove">
       Remove from Library
     </ContextMenuItem>
@@ -31,6 +34,7 @@
     </div>
     <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
          @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
+      <div v-if="book.fxtl_is_read" class="book-is-read" />
       <div v-if="downloadingId === book.id"  class="download-overlay" @click.stop>
         <div class="spinner spinner-with-progress" :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
       </div>
@@ -57,8 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import {nextTick, onMounted, ref, useTemplateRef} from 'vue'
-import {saveToIndexedDB} from './dbaccess'
+import {nextTick, onMounted, ref, toRaw, unref, useTemplateRef} from 'vue'
+import {loadFromBookDb, saveToBookDb, saveToIndexedDB} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
 import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
@@ -67,9 +71,26 @@ import ContextMenu from "./components/ContextMenu.vue"
 import ContextMenuItem from "./components/ContextMenuItem.vue";
 import IconDownload from "../public/icons/download-svgrepo-com.svg"
 import IconRemove from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg"
+import IconBookRead from "../public/icons/eye-svgrepo-com.svg"
+import {syncedUpdate} from "./sync";
 
 
 const bookContainer = useTemplateRef('book-container')
+
+
+async function postAsync(url: string, data: object) {
+  const response = await fetch(`${URL}/set_book_metadata`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...authHeaders()
+        },
+        body: JSON.stringify(data)
+      })
+  return await response.json()
+}
 
 
 async function fetchAsync(url: string) {
@@ -84,6 +105,7 @@ async function fetchAsync(url: string) {
 interface BookMeta {
   id: string
   title: string
+  fxtl_is_read: boolean
 }
 
 const books = ref<BookMeta[]>([])
@@ -188,6 +210,19 @@ async function uploadFile(event: Event) {
 const showDeleteModal = ref(false)
 const bookIdPendingDelete = ref<string | null>(null)
 const isDeleting = ref(false)
+
+async function toggleIsRead() {
+  let new_value = !displayBookContextMenu.value.fxtl_is_read;
+  displayBookContextMenu.value.fxtl_is_read = new_value
+  const book = displayBookContextMenu.value
+  displayBookContextMenu.value = null
+
+  if (await loadFromBookDb("books", book.id, null)) {
+    await saveToBookDb("books", toRaw(book), book.id)
+  }
+
+  syncedUpdate("update-read-status", book.id, {fxtl_is_read: new_value})
+}
 
 function confirmRemoveBook(identifier: string) {
   displayBookContextMenu.value = null
@@ -422,7 +457,15 @@ onMounted(() => {
   font-size: 0.9rem;
   margin-top: 0.25rem;
 }
-
+.book-is-read {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  width: 10px;
+  height: 10px;
+  background: green;
+  border-radius: 50%;
+}
 .download-overlay {
   position: absolute;
   inset: 0;

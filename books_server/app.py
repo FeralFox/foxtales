@@ -179,17 +179,22 @@ async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_cur
 
 class BookMetaData(BaseModel):
     book_id: int
-    fxtl_progress: float
-    fxtl_progress_update: str
+    fxtl_progress: Optional[float] = None
+    fxtl_progress_update: Optional[str] = None
+    fxtl_is_read: Optional[bool] = None
 
 
 @app.post("/set_book_metadata")
 async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
     book_id = data.book_id
-    current_user.library.set_custom_value(book_id, "fxtl_progress",
-                                          str(data.fxtl_progress))
-    current_user.library.set_custom_value(book_id, "fxtl_progress_update",
-                                          data.fxtl_progress_update.replace("Z", "+00:00"))
+    if data.fxtl_progress is not None:
+        current_user.library.set_custom_value(book_id, "fxtl_progress",
+                                              str(data.fxtl_progress))
+        current_user.library.set_custom_value(book_id, "fxtl_progress_update",
+                                              data.fxtl_progress_update.replace("Z", "+00:00"))
+    if data.fxtl_is_read is not None:
+        current_user.library.set_custom_value(book_id, "fxtl_is_read", str(data.fxtl_is_read))
+
 
 @app.get("/get_book")
 async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int, format: str):
