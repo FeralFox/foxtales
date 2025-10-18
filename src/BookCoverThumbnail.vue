@@ -48,7 +48,7 @@ export default {
 @media (max-width: 640px) {
   .book_card {
     width: 7em;
-    height: 11em;
+    height: 12em;
     font-size: 90%;
   }
 }
