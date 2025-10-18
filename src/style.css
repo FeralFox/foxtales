@@ -7,6 +7,7 @@
     font-size: inherit;
     line-height: 1.4;
     word-break: break-word;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     margin: 0;
@@ -38,7 +39,6 @@
       animation: fade-in 120ms var(--transition-default, ease-in-out) both;
   }
   button {
-      -webkit-tap-highlight-color: transparent;
       --btn-bg: #f6f7f9;
       --btn-bg-hover: #eef0f3;
       --btn-bg-active: #e6e9ee;

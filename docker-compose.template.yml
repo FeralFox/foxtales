@@ -6,6 +6,7 @@ services:
     volumes:
       - ./volume/libraries:/config/libraries
       - ./volume/config:/config/.config/calibre
+    restart: unless-stopped
     environment:
       SECRET_KEY: "<secretkey>"
       DEFAULT_USER: username
