@@ -44,6 +44,11 @@
     <div v-if="showToc">
       <div class="tocArea">
         <button @click="closeBook" style="margin-left: 50%;transform: translate(-50%, 0);">Back to library</button>
+        <hr style="margin: 1rem;"/>
+        <div class="buttonBar">
+          <button @click="increaseFontSize" style="border-top-right-radius:0;border-bottom-right-radius:0">+</button>
+          <button @click="reduceFontSize" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
+        </div>
         <TocComponent
           :toc="toc"
           :current="currentHref"
@@ -66,6 +71,26 @@ import {
   Transition,
   h as _h,
 } from 'vue'
+
+let currentFontSize = 140
+
+function increaseFontSize() {
+  if (!rendition) {return}
+  currentFontSize += 20
+  updateStyle()
+}
+function reduceFontSize() {
+  currentFontSize -= 20
+  updateStyle()
+}
+
+function updateStyle() {
+  rendition.renderer.setStyles?.(getCSS({
+    spacing: 1.4,
+    justify: true,
+    hyphenate: true,
+    fontSize: currentFontSize}))
+}
 
 function closeBook() {
   window.location.hash='/'
@@ -198,12 +223,57 @@ const bookName = ref('')
 
 let rendition = null
 
+const getCSS = ({ spacing, justify, hyphenate, fontSize }) => `
+    @namespace epub "http://www.idpf.org/2007/ops";
+    html {
+        color-scheme: light;
+        font-size: ${fontSize}%;
+    }
+    /* https://github.com/whatwg/html/issues/5426 */
+    @media (prefers-color-scheme: dark) {
+        a:link {
+            color: lightblue;
+        }
+    }
+    p, li, blockquote, dd {
+        line-height: ${spacing};
+        text-align: ${justify ? 'justify' : 'start'};
+        -webkit-hyphens: ${hyphenate ? 'auto' : 'manual'};
+        hyphens: ${hyphenate ? 'auto' : 'manual'};
+        -webkit-hyphenate-limit-before: 3;
+        -webkit-hyphenate-limit-after: 2;
+        -webkit-hyphenate-limit-lines: 2;
+        hanging-punctuation: allow-end last;
+        widows: 2;
+    }
+    /* prevent the above from overriding the align attribute */
+    [align="left"] { text-align: left; }
+    [align="right"] { text-align: right; }
+    [align="center"] { text-align: center; }
+    [align="justify"] { text-align: justify; }
+
+    pre {
+        white-space: pre-wrap !important;
+    }
+    aside[epub|type~="endnote"],
+    aside[epub|type~="footnote"],
+    aside[epub|type~="note"],
+    aside[epub|type~="rearnote"] {
+        display: none;
+    }
+`
+
 const onGetRendition = (val) => {
   getRendition && getRendition(val)
   const { book } = val
   rendition = val
   const title = book.metadata?.title
   bookName.value = title || ''
+  val.renderer.setStyles?.(getCSS({
+    spacing: 1.4,
+    justify: true,
+    hyphenate: true,
+    fontSize: 140}))
 }
 
 const onTocChange = (_toc) => {
@@ -268,6 +338,10 @@ const setLocation = (href, close = true) => {
   bottom: 0;
   right: 0;
   z-index: 1;
+}
+
+.buttonBar {
+  justify-self: center;
 }
 
 .tocArea {

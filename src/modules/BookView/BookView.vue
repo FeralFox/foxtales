@@ -31,6 +31,9 @@ const props = defineProps({
   },
   tocChanged: Function,
   getRendition: Function,
+  style: {
+    type: Object,
+  }
 })
 
 const { tocChanged, getRendition } = props
@@ -42,48 +45,8 @@ let view = null
 const viewer = ref(null)
 const isLoaded = ref(false)
 
-const getCSS = ({ spacing, justify, hyphenate }) => `
-    @namespace epub "http://www.idpf.org/2007/ops";
-    html {
-        color-scheme: light;
-    }
-    /* https://github.com/whatwg/html/issues/5426 */
-    @media (prefers-color-scheme: dark) {
-        a:link {
-            color: lightblue;
-        }
-    }
-    p, li, blockquote, dd {
-        line-height: ${spacing};
-        text-align: ${justify ? 'justify' : 'start'};
-        -webkit-hyphens: ${hyphenate ? 'auto' : 'manual'};
-        hyphens: ${hyphenate ? 'auto' : 'manual'};
-        -webkit-hyphenate-limit-before: 3;
-        -webkit-hyphenate-limit-after: 2;
-        -webkit-hyphenate-limit-lines: 2;
-        hanging-punctuation: allow-end last;
-        widows: 2;
-    }
-    /* prevent the above from overriding the align attribute */
-    [align="left"] { text-align: left; }
-    [align="right"] { text-align: right; }
-    [align="center"] { text-align: center; }
-    [align="justify"] { text-align: justify; }
-
-    pre {
-        white-space: pre-wrap !important;
-    }
-    aside[epub|type~="endnote"],
-    aside[epub|type~="footnote"],
-    aside[epub|type~="note"],
-    aside[epub|type~="rearnote"] {
-        display: none;
-    }
-`
-
 const initBook = async () => {
   view = document.createElement('foliate-view')
-  console.log(view)
   viewer.value.append(view)
   if (url.value) {
     view && view.close()
@@ -100,13 +63,6 @@ const initBook = async () => {
 const initReader = () => {
   isLoaded.value = true
   const { book } = view
-  view.renderer.setStyles?.(
-    getCSS({
-      spacing: 1.4,
-      justify: true,
-      hyphenate: true,
-    }),
-  )
   view.renderer.setAttribute("exportsparts", "filter")
   registerEvents()
   getRendition(view)
