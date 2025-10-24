@@ -20,7 +20,7 @@ async function updateSingleDb(dbName: string) {
                         ...progress
                     })
                 })
-        } catch (e) {
+        } catch (e: any) {
             if (e.message === "Failed to fetch") {return}
             else {throw e}
         }
