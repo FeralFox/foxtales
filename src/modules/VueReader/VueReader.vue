@@ -42,18 +42,29 @@
     </div>
 
     <div v-if="showToc">
-      <div class="tocArea">
-        <button @click="closeBook" style="margin-left: 50%;transform: translate(-50%, 0);">Back to library</button>
-        <hr style="margin: 1rem;"/>
-        <div class="buttonBar">
-          <button @click="increaseFontSize" style="border-top-right-radius:0;border-bottom-right-radius:0">+</button>
-          <button @click="reduceFontSize" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
-        </div>
-        <TocComponent
-          :toc="toc"
-          :current="currentHref"
-          :setLocation="setLocation"
-        />
+        <div class="tocArea">
+          <div class="sidebarTabs">
+            <div @click="selectNavigation" :class="selectedTab === 'navigation' ? 'selectedTab' : ''"><IconBook/></div>
+            <div @click="selectView" :class="selectedTab === 'view' ? 'selectedTab' : ''"><IconBookRead/></div>
+          </div>
+
+          <div v-if="selectedTab === 'navigation'">
+            <button @click="closeBook" style="margin-left: 50%;transform: translate(-50%, 0);">Back to library</button>
+            <hr style="margin: 1rem;"/>
+            <TocComponent
+                :toc="toc"
+                :current="currentHref"
+                :setLocation="setLocation"
+            />
+          </div>
+
+          <div v-if="selectedTab === 'view'">
+            <div class="buttonBar">
+              <button @click="increaseFontSize" style="border-top-right-radius:0;border-bottom-right-radius:0">+
+              </button>
+              <button @click="reduceFontSize" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
+            </div>
+          </div>
       </div>
 
       <div v-if="expandedToc" class="tocBackground" @click="toggleToc"></div>
@@ -71,8 +82,19 @@ import {
   Transition,
   h as _h,
 } from 'vue'
+import IconBookRead from "../../../public/icons/eye-svgrepo-com.svg";
+import IconBook from "../../../public/icons/book-svgrepo-com.svg";
 
 let currentFontSize = 140
+let selectedTab = ref("navigation")
+
+function selectNavigation() {
+  selectedTab.value = "navigation"
+}
+
+function selectView(){
+  selectedTab.value = "view"
+}
 
 function increaseFontSize() {
   if (!rendition) {return}
@@ -344,6 +366,32 @@ const setLocation = (href, close = true) => {
   justify-self: center;
 }
 
+.sidebarTabs {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  background: black;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.sidebarTabs div {
+  padding: 0.3em 0.5em;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 5px 5px 0 0;
+}
+
+.sidebarTabs div svg {
+  width: 2em;
+  height: 2em;
+}
+
+.sidebarTabs .selectedTab {
+  background: #f2f2f2;
+  color: black;
+}
+
 .tocArea {
   position: absolute;
   left: 0;
@@ -355,7 +403,6 @@ const setLocation = (href, close = true) => {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: #f2f2f2;
-  padding: 10px 0;
 }
 
 /* 滚动条 */
