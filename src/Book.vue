@@ -1,5 +1,5 @@
 <template>
-  <div id="reader-content" v-if="url" style="position: relative;width:100%;height:100%">
+  <div id="reader-content" v-if="url" :class="initialized ? '' : 'hidden'" style="position: relative;width:100%;height:100%">
     <vue-reader
         :location="initialPosition"
         :url="url"
@@ -30,6 +30,7 @@ import {syncedUpdate} from "./sync";
 const url = ref('')
 const book_metadata = ref('')
 const initialPosition = ref(0)
+const initialized = ref(false)
 
 const loadBook = async () => {
   const book_id = window.location.hash.split("?")[1].slice(3)
@@ -54,7 +55,12 @@ const change = (e) => {
 
 const getRendition = async (val) => {
   view = val
+  setTimeout(async () => {
+    view.renderer.prev();
+    setTimeout(() => initialized.value = true, 200)
+  }, 100)
 }
+
 
 const locationChange = async (detail) => {
   let { fraction } = detail
@@ -77,6 +83,9 @@ const locationChange = async (detail) => {
 }
 </script>
 <style>
+.hidden {
+  visibility: hidden;
+}
 .progress {
   position: absolute;
   bottom: 0;
@@ -99,8 +108,5 @@ const locationChange = async (detail) => {
   height: 5px;
   accent-color: #000;
   opacity: 0.5;
-}
-#reader-content {
-  visibility: inherit;
 }
 </style>

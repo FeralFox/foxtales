@@ -35,7 +35,7 @@
       <div class="arrow next" @click="next">›</div>
     </div>
 
-    <div v-if="showToc">
+    <div v-if="showToc && expandedToc">
         <div class="tocArea">
           <div class="sidebarTabs">
             <div @click="selectNavigation" :class="selectedTab === 'navigation' ? 'selectedTab' : ''"><IconBook/></div>
