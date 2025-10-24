@@ -59,6 +59,11 @@ const getRendition = async (val) => {
 const locationChange = async (detail) => {
   let { fraction } = detail
   current.value = Math.floor(fraction * 100)
+  if (fraction === 1) {
+    const book = book_metadata.value.fxtl_is_read = true
+    await saveToBookDb("books", toRaw(book), book.id)
+    syncedUpdate("update-read-status", book.id, {fxtl_is_read: true})
+  }
   if (fraction !== book_metadata.value.fxtl_progress) {
     const dateUpdate = new Date().toISOString()
     book_metadata.value.fxtl_progress = fraction

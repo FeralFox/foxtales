@@ -6,19 +6,24 @@ async function updateSingleDb(dbName: string) {
     const current_updates = await loadFromBookDb("db_updates", dbName, {})
     for (let book_id of Object.keys(current_updates)) {
         const progress = current_updates[book_id]
-        const response = await fetch(`${URL}/set_book_metadata`,
-            {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    ...authHeaders()
-                },
-                body: JSON.stringify({
-                    book_id: book_id,
-                    ...progress
+        try {
+            const response = await fetch(`${URL}/set_book_metadata`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        ...authHeaders()
+                    },
+                    body: JSON.stringify({
+                        book_id: book_id,
+                        ...progress
+                    })
                 })
-            })
+        } catch (e) {
+            if (e.message === "Failed to fetch") {return}
+            else {throw e}
+        }
     }
     await saveToBookDb("db_updates", {}, dbName)
 }
