@@ -55,6 +55,7 @@
   color: white;
   border: 1px solid #fff6;
   border-radius: 4px;
+  font-size: 0.8em;
   padding: 0.25rem 0.5rem;
   cursor: pointer;
   transition: var(--transition-default)
