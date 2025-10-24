@@ -17,12 +17,6 @@
         <span class="tocButtonBar" style="top: 66%"></span>
       </div>
 
-<!--      <slot name="title">-->
-<!--        <div class="titleArea" :title="title || bookName">-->
-<!--          {{ title || bookName }}-->
-<!--        </div>-->
-<!--      </slot>-->
-
       <book-view
         ref="bookRef"
         v-bind="$attrs"
@@ -60,9 +54,16 @@
 
           <div v-if="selectedTab === 'view'">
             <div class="buttonBar">
+              <span>Font size</span>
               <button @click="increaseFontSize" style="border-top-right-radius:0;border-bottom-right-radius:0">+
               </button>
               <button @click="reduceFontSize" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
+            </div>
+            <div class="buttonBar">
+              <span>Spacing</span>
+              <button @click="increaseSpacing" style="border-top-right-radius:0;border-bottom-right-radius:0">+
+              </button>
+              <button @click="reduceSpacing" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
             </div>
           </div>
       </div>
@@ -86,6 +87,7 @@ import IconBookRead from "../../../public/icons/eye-svgrepo-com.svg";
 import IconBook from "../../../public/icons/book-svgrepo-com.svg";
 
 let currentFontSize = 140
+let currentSpacing = 1.4
 let selectedTab = ref("navigation")
 
 function selectNavigation() {
@@ -106,9 +108,19 @@ function reduceFontSize() {
   updateStyle()
 }
 
+function increaseSpacing() {
+  if (!rendition) {return}
+  currentSpacing += 0.2
+  updateStyle()
+}
+function reduceSpacing() {
+  currentSpacing -= 0.2
+  updateStyle()
+}
+
 function updateStyle() {
   rendition.renderer.setStyles?.(getCSS({
-    spacing: 1.4,
+    spacing: currentSpacing,
     justify: true,
     hyphenate: true,
     fontSize: currentFontSize}))
@@ -364,6 +376,14 @@ const setLocation = (href, close = true) => {
 
 .buttonBar {
   justify-self: center;
+  width: 90%;
+  margin: 1rem;
+  display: flex;
+  align-items: center;
+}
+.buttonBar span {
+  font-weight: bold;
+  flex-grow: 1;
 }
 
 .sidebarTabs {
