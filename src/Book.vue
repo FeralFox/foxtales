@@ -5,6 +5,7 @@
         :url="url"
         :getRendition="getRendition"
         @update:location="locationChange"
+        :on-btn-next="onBtnNext"
     >
     </vue-reader>
 
@@ -31,6 +32,7 @@ const url = ref('')
 const book_metadata = ref('')
 const initialPosition = ref(0)
 const initialized = ref(false)
+let isLastPage = false
 
 const loadBook = async () => {
   const book_id = window.location.hash.split("?")[1].slice(3)
@@ -62,14 +64,19 @@ const getRendition = async (val) => {
 }
 
 
+async function onBtnNext() {
+  if (isLastPage) {
+    book_metadata.value.fxtl_is_read = true
+    await saveToBookDb("books", toRaw(book_metadata.value), book_metadata.value.id)
+    syncedUpdate("update-read-status", book_metadata.value.id, {fxtl_is_read: true})
+    window.location.hash = "/"
+  }
+}
+
 const locationChange = async (detail) => {
   let { fraction } = detail
+  isLastPage = fraction === 1;
   current.value = Math.floor(fraction * 100)
-  if (fraction === 1) {
-    const book = book_metadata.value.fxtl_is_read = true
-    await saveToBookDb("books", toRaw(book), book.id)
-    syncedUpdate("update-read-status", book.id, {fxtl_is_read: true})
-  }
   if (fraction !== book_metadata.value.fxtl_progress) {
     const dateUpdate = new Date().toISOString()
     book_metadata.value.fxtl_progress = fraction

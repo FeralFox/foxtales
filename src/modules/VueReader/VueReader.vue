@@ -239,6 +239,9 @@ const props = defineProps({
     type: String,
     default: '#fff',
   },
+  onBtnNext: {
+    type: Function
+  }
 })
 
 const book = reactive({
@@ -320,6 +323,7 @@ const toggleToc = () => {
 
 const next = () => {
   bookRef.value?.nextPage()
+  props.onBtnNext()
 }
 const pre = () => {
   bookRef.value?.prevPage()
