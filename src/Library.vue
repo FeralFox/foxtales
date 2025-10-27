@@ -16,46 +16,64 @@
       Remove from Library
     </ContextMenuItem>
   </ContextMenu>
-  <div style="display: flex; flex-wrap: wrap;align-content: flex-start;overflow:auto" @scroll="onScroll"
-       ref="book-container">
-    <div class="book_card" ref="upload-book">
-      <div class="upload-book">
-        <IconAddBook class="add-book-icon"/>
-        <div v-if="!isUploading">Upload Book</div>
-        <div v-else class="progress-container">
-          <div class="progress-label">Uploading... {{ uploadProgress }}%</div>
-          <div class="progress-bar">
-            <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
+  <div style="width:100%;    display: flex;    flex-direction: column;">
+    <div style="display: flex;padding: 1rem 1rem 0;align-items: center;position:relative;">
+      <input ref="search-field" v-on:keyup.enter="applyFilter" class="search-field" type="text"
+             placeholder="Filter..."/>
+      <div @click="applyFilter" class="search-field-btn">
+        <IconSearch/>
+      </div>
+    </div>
+    <div style="overflow:hidden;position:relative;display: flex">
+      <div style="overflow: auto">
+        <div style="display: flex; flex-wrap: wrap;align-content: flex-start;"
+             @scroll="onScroll"
+             ref="book-container">
+          <div class="book_card" ref="upload-book">
+            <div class="upload-book">
+              <IconAddBook class="add-book-icon"/>
+              <div v-if="!isUploading">Upload Book</div>
+              <div v-else class="progress-container">
+                <div class="progress-label">Uploading... {{ uploadProgress }}%</div>
+                <div class="progress-bar">
+                  <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
+                </div>
+              </div>
+              <input :disabled="isUploading" class="file-upload" type="file" multiple accept="*" @change="uploadFile"/>
+            </div>
+            <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
+          </div>
+          <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
+               @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
+            <div v-if="book.fxtl_is_read" class="book-is-read"/>
+            <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
+              <div class="spinner spinner-with-progress"
+                   :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
+            </div>
+            <div v-if="downloadQueue.includes(book.id)" class="download-overlay" @click.stop>
+              <div class="spinner"></div>
+            </div>
+            <BookCoverThumbnail
+                :book="book"
+                :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
+            />
           </div>
         </div>
-        <input :disabled="isUploading" class="file-upload" type="file" multiple accept="*" @change="uploadFile"/>
       </div>
-      <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
-    </div>
-    <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
-         @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
-      <div v-if="book.fxtl_is_read" class="book-is-read" />
-      <div v-if="downloadingId === book.id"  class="download-overlay" @click.stop>
-        <div class="spinner spinner-with-progress" :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
-      </div>
-      <div v-if="downloadQueue.includes(book.id)" class="download-overlay" @click.stop>
+      <div v-if="booksLoading" class="libraries-loading-spinner">
         <div class="spinner"></div>
       </div>
-      <BookCoverThumbnail
-          :book="book"
-          :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
-      />
     </div>
-    
-    <div v-if="showDeleteModal" class="modal" @click.stop>
-      <div style="font-weight: 600">Remove from Library</div>
-      <div>Are you sure you want to remove this book from your library?</div>
-      <div style="display:flex; gap: 8px; justify-content: flex-end; margin-top: 8px">
-        <button @click="cancelRemoveBook" :disabled="isDeleting" class="btn-ghost">Cancel</button>
-        <button @click="removeBookConfirmed" :disabled="isDeleting" class="btn-danger">
-          {{ isDeleting ? 'Removing…' : 'Remove' }}
-        </button>
-      </div>
+  </div>
+
+  <div v-if="showDeleteModal" class="modal" @click.stop>
+    <div style="font-weight: 600">Remove from Library</div>
+    <div>Are you sure you want to remove this book from your library?</div>
+    <div style="display:flex; gap: 8px; justify-content: flex-end; margin-top: 8px">
+      <button @click="cancelRemoveBook" :disabled="isDeleting" class="btn-ghost">Cancel</button>
+      <button @click="removeBookConfirmed" :disabled="isDeleting" class="btn-danger">
+        {{ isDeleting ? 'Removing…' : 'Remove' }}
+      </button>
     </div>
   </div>
 </template>
@@ -71,11 +89,13 @@ import ContextMenu from "./components/ContextMenu.vue"
 import ContextMenuItem from "./components/ContextMenuItem.vue";
 import IconDownload from "../public/icons/download-svgrepo-com.svg"
 import IconRemove from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg"
+import IconSearch from "../public/icons/magnifier-svgrepo-com.svg"
 import IconBookRead from "../public/icons/eye-svgrepo-com.svg"
 import {syncedUpdate} from "./sync";
 
 
 const bookContainer = useTemplateRef('book-container')
+const searchField = useTemplateRef('search-field')
 
 
 async function postAsync(url: string, data: object) {
@@ -330,13 +350,23 @@ async function downloadBook(identifier: string) {
   }
 }
 
-const BOOKS_TO_PREFETCH = 20;
+function applyFilter() {
+  const searchValue = searchField.value!.value
+  loadBooks(0, true, searchValue)
+}
 
-async function loadBooks(start_from: number, initialFetch?: boolean) {
-  const fetchedBooks = await fetchAsync(`${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}&start_from=${start_from}`)
-  if (fetchedBooks.length === 0) {
-    return
+const BOOKS_TO_PREFETCH = 20;
+const booksLoading = ref(false)
+
+
+async function loadBooks(start_from: number, initialFetch?: boolean, filter?: string) {
+  booksLoading.value = true
+  if (filter) {
+    filter = `&search_query=${encodeURIComponent(filter)}`
+  } else {
+    filter = ""
   }
+  const fetchedBooks = await fetchAsync(`${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}&start_from=${start_from}${filter}`)
   // Immediately display all books as soon as they are available.
   if (start_from === 0) {
     covers.value = {}
@@ -344,6 +374,7 @@ async function loadBooks(start_from: number, initialFetch?: boolean) {
   } else {
     books.value = [...books.value, ...fetchedBooks]
   }
+  booksLoading.value = false
 
   // prefetch covers as data urls (requires auth header)
   await Promise.all(fetchedBooks.map(async (b: any) => {
@@ -457,6 +488,7 @@ onMounted(() => {
   font-size: 0.9rem;
   margin-top: 0.25rem;
 }
+
 .book-is-read {
   position: absolute;
   top: 25px;
@@ -466,6 +498,7 @@ onMounted(() => {
   background: green;
   border-radius: 50%;
 }
+
 .download-overlay {
   position: absolute;
   inset: 0;
@@ -497,7 +530,53 @@ onMounted(() => {
   mask-image: radial-gradient(circle, transparent 55%, black 56%);
   mask-composite: exclude; /* for some browsers; harmless where unsupported */
 }
+
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.search-field {
+  flex-grow: 1;
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #777;
+}
+
+.search-field-btn {
+  height: 100%;
+  padding: 5px;
+  position: absolute;
+  right: 0;
+  transform: translate(-75%, 0);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #777
+}
+
+.search-field-btn svg {
+  width: 1em;
+  height: 1em;
+}
+
+.libraries-loading-spinner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fffa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .libraries-loading-spinner {
+    margin-left: 1rem;
+  }
 }
 </style>

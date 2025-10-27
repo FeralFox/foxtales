@@ -1,5 +1,5 @@
 <template>
-  <div class="book_card">
+  <div class="book_card" :title="book.title">
     <div
         class="book_cover"
         :style="{
@@ -77,6 +77,7 @@ export default {
   border-radius: 5px;
   display: flex;
   align-items: center;
+  margin-left: 5px;
 }
 
 .full-title {
