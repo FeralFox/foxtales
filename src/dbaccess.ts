@@ -113,6 +113,41 @@ function loadFromIndexedDB(storeName: string, tableName: string, id: string, def
 }
 
 
+function getKeysFromIndexedDb(storeName: string, tableName: string){
+    return new Promise(
+        function(resolve, reject) {
+            var dbRequest = indexedDB.open(storeName);
+
+            dbRequest.onerror = function(event: any) {
+                reject(Error("Error text"));
+            };
+
+            dbRequest.onupgradeneeded = function(event: any) {
+                // Objectstore does not exist. Nothing to load
+                event.target.transaction.abort();
+                reject(Error('Not found'));
+            };
+
+            dbRequest.onsuccess = function(event: any) {
+                var database      = event.target.result;
+                var transaction   = database.transaction([tableName]);
+                var objectStore   = transaction.objectStore(tableName);
+                var objectRequest = objectStore.getAllKeys();
+
+                objectRequest.onerror = function(event: any) {
+                    reject(Error('Error text'));
+                };
+
+                objectRequest.onsuccess = function(event: any) {
+                    if (objectRequest.result) resolve(objectRequest.result);
+                    else reject(Error('object not found'));
+                };
+            };
+        }
+    );
+}
+
+
 function saveToIndexedDB(storeName: string, tableName: string, object: any, id?: string){
     return new Promise(
         function(resolve, reject) {
@@ -190,4 +225,4 @@ function saveToBookDb(tableName: string, object: any, id?: string){
 }
 
 
-export {saveToIndexedDB, deleteFromIndexedDB, loadFromIndexedDB, getValuesFromIndexedDB, saveToBookDb, loadFromBookDb}
+export {getKeysFromIndexedDb, saveToIndexedDB, deleteFromIndexedDB, loadFromIndexedDB, getValuesFromIndexedDB, saveToBookDb, loadFromBookDb}

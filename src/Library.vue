@@ -10,7 +10,7 @@
       Download to Device
     </ContextMenuItem>
     <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
-      Toggle Read Status
+      {{ displayBookContextMenu.fxtl_is_read ? "Mark as unread" : "Mark as read" }}
     </ContextMenuItem>
     <ContextMenuItem @click="confirmRemoveBook(displayBookContextMenu.id)" :icon="IconRemove">
       Remove from Library
@@ -45,7 +45,6 @@
           </div>
           <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
                @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
-            <div v-if="book.fxtl_is_read" class="book-is-read"/>
             <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
               <div class="spinner spinner-with-progress"
                    :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
@@ -55,6 +54,7 @@
             </div>
             <BookCoverThumbnail
                 :book="book"
+                :display-book-downloaded-icon="localBooks.includes(book.id.toString())"
                 :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
             />
           </div>
@@ -79,8 +79,8 @@
 </template>
 
 <script setup lang="ts">
-import {nextTick, onMounted, ref, toRaw, unref, useTemplateRef} from 'vue'
-import {loadFromBookDb, saveToBookDb, saveToIndexedDB} from './dbaccess'
+import {nextTick, onMounted, ref, toRaw, useTemplateRef} from 'vue'
+import {getKeysFromIndexedDb, loadFromBookDb, saveToBookDb, saveToIndexedDB} from './dbaccess'
 import BookCoverThumbnail from "./BookCoverThumbnail.vue";
 import Navigation from "./Navigation.vue";
 import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
@@ -129,6 +129,7 @@ interface BookMeta {
 }
 
 const books = ref<BookMeta[]>([])
+const localBooks = ref<string[]>([])
 const covers = ref<Record<string, string>>({})
 const downloadingId = ref<string>('')
 const downloadQueue = ref<string[]>([])
@@ -334,6 +335,7 @@ async function downloadBook(identifier: string) {
     await saveToIndexedDB('books', 'books', bookMetaData, identifier)
     await saveToIndexedDB(`cover`, 'cover', coverBase64, identifier)
     await saveToIndexedDB(`data`, 'data', blob, identifier)
+    localBooks.value.push(bookMetaData.id.toString())
   } catch (e: any) {
     console.error(e)
     downloadError.value = e?.message || 'Download failed'
@@ -361,6 +363,7 @@ const booksLoading = ref(false)
 
 async function loadBooks(start_from: number, initialFetch?: boolean, filter?: string) {
   booksLoading.value = true
+  localBooks.value = await getKeysFromIndexedDb("books", "books") as string[]
   if (filter) {
     filter = `&search_query=${encodeURIComponent(filter)}`
   } else {
@@ -424,7 +427,7 @@ onMounted(() => {
 </script>
 
 
-<style>
+<style scoped>
 .add-book-icon {
   height: 50%;
   width: 50%;
@@ -487,16 +490,6 @@ onMounted(() => {
   color: #b00020;
   font-size: 0.9rem;
   margin-top: 0.25rem;
-}
-
-.book-is-read {
-  position: absolute;
-  top: 25px;
-  right: 25px;
-  width: 10px;
-  height: 10px;
-  background: green;
-  border-radius: 50%;
 }
 
 .download-overlay {

@@ -37,7 +37,7 @@ const currentView = computed(() => {
 })
 </script>
 
-<style>
+<style scoped>
 .container {
   display: flex;
   height: 100vh;

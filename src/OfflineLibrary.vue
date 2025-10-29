@@ -7,7 +7,7 @@
       :title="displayBookContextMenu?.title"
     >
       <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
-        Toggle Read Status
+        {{displayBookContextMenu.fxtl_is_read ? "Mark as unread" : "Mark as read"}}
       </ContextMenuItem>
       <ContextMenuItem @click="deleteBook(displayBookContextMenu)" :icon="IconTrashBin">Delete from Device</ContextMenuItem>
     </ContextMenu>
@@ -20,25 +20,15 @@
         @click.stop="goToBook(book.id!)"
         @contextmenu.prevent="openContextMenu($event, book)"
         style="cursor: pointer; position: relative">
-        <div v-if="book.fxtl_is_read" class="book-is-read" />
         <BookCoverThumbnail :book="book" :image="`url(${book.cover})`"/>
       </div>
     </div>
 </template>
 
-<style>
+<style scoped>
 /* Context menu styles now live in components/ContextMenu.vue */
 .context-menu-item svg { width:1.4em; height:1.4em; color: #000a; }
 
-.book-is-read {
-  position: absolute;
-  top: 25px;
-  right: 25px;
-  width: 10px;
-  height: 10px;
-  background: green;
-  border-radius: 50%;
-}
 </style>
 
 <script setup lang="ts">

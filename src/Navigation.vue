@@ -9,7 +9,7 @@
     <button v-if="isAuthenticated" class="logout-btn" @click="logout">Logout</button>
   </div>
 </template>
-<style>
+<style scoped>
 .navigation {
   align-items: center;
   color: white;

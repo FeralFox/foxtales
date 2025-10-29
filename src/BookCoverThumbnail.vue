@@ -5,21 +5,32 @@
         :style="{
               backgroundImage: image,
             }"
-    ></div>
-    <div class="full-title"><div class="episode-title">{{ truncated_title.title }}</div><div v-if="truncated_title.episode" class="episode-label">
+    >
+      <div class="book-is-read">
+        <IconBookRead  v-if="book.fxtl_is_read"/>
+        <IconDownloadSmall v-if="displayBookDownloadedIcon" />
+      </div>
+    </div>
+    <div class="full-title">
+      <div class="episode-title">{{ truncated_title.title }}</div>
+      <div v-if="truncated_title.episode" class="episode-label">
       {{ truncated_title.episode }}</div></div>
   </div>
 </template>
-<script>
-export default {
-  name: 'BookCoverThumbnail',
-  props: {
+
+<script setup lang="ts">
+import IconDownloadSmall from "../public/icons/download-small-svgrepo-com.svg";
+import IconBookRead from "../public/icons/eye-filled-svgrepo-com.svg";
+import {computed} from "vue";
+
+  const props = defineProps({
     book: {},
-    image: ""
-  },
-  computed: {
-    truncated_title() {
-      const title = this.book && this.book.title ? String(this.book.title) : '';
+    displayBookDownloadedIcon: Boolean | undefined,
+    image: ""});
+
+
+   const  truncated_title = computed(() => {
+      const title = props.book && props.book.title ? String(props.book.title) : '';
       let episode_index = title.search(/\d+$/);
       if (episode_index !== -1) {
         return {
@@ -28,9 +39,7 @@ export default {
         }
       }
       return {title: title, episode: ''}
-    }
-  }
-}
+    })
 </script>
 <style>
 .book_card {
@@ -52,8 +61,10 @@ export default {
     font-size: 90%;
   }
 }
-
+</style>
+<style scoped>
 .book_cover {
+  position: relative;
   background-size: cover;
   width: 100%;
   height: calc(100% - 2rem);
@@ -78,6 +89,27 @@ export default {
   display: flex;
   align-items: center;
   margin-left: 5px;
+}
+
+.book-is-read {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: #000a;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.book-is-read svg {
+  width: 15px;
+  height: 15px;
+  color: white;
+  margin: 3px 3px 3px 0;
+}
+.book-is-read svg:first-child {
+  margin-left: 3px;
 }
 
 .full-title {

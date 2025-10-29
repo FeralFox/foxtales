@@ -89,7 +89,7 @@ const locationChange = async (detail) => {
   }
 }
 </script>
-<style>
+<style scoped>
 .hidden {
   visibility: hidden;
 }
