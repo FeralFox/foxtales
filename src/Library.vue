@@ -1,61 +1,114 @@
 <template>
-  <Navigation active="library"/>
+  <Navigation active="library" />
   <ContextMenu
-      v-model="displayBookContextMenu"
-      :x="contextMenuX"
-      :y="contextMenuY"
-      :title="displayBookContextMenu?.title"
+    v-model="displayBookContextMenu"
+    :x="contextMenuX"
+    :y="contextMenuY"
+    :title="displayBookContextMenu?.title"
   >
-    <ContextMenuItem @click="downloadBook(displayBookContextMenu.id)" :icon="IconDownload">
+    <ContextMenuItem
+      @click="downloadBook(displayBookContextMenu.id)"
+      :icon="IconDownload"
+    >
       Download to Device
     </ContextMenuItem>
     <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
-      {{ displayBookContextMenu.fxtl_is_read ? "Mark as unread" : "Mark as read" }}
+      {{
+        displayBookContextMenu.fxtl_is_read ? 'Mark as unread' : 'Mark as read'
+      }}
     </ContextMenuItem>
-    <ContextMenuItem @click="confirmRemoveBook(displayBookContextMenu.id)" :icon="IconRemove">
+    <ContextMenuItem
+      @click="confirmRemoveBook(displayBookContextMenu.id)"
+      :icon="IconRemove"
+    >
       Remove from Library
     </ContextMenuItem>
   </ContextMenu>
-  <div style="width:100%;    display: flex;    flex-direction: column;">
-    <div style="display: flex;padding: 1rem 1rem 0;align-items: center;position:relative;">
-      <input ref="search-field" v-on:keyup.enter="applyFilter" class="search-field" type="text"
-             placeholder="Filter..."/>
+  <div style="width: 100%; display: flex; flex-direction: column">
+    <div
+      style="
+        display: flex;
+        padding: 1rem 1rem 0;
+        align-items: center;
+        position: relative;
+      "
+    >
+      <input
+        ref="search-field"
+        v-on:keyup.enter="applyFilter"
+        class="search-field"
+        type="text"
+        placeholder="Filter..."
+      />
       <div @click="applyFilter" class="search-field-btn">
-        <IconSearch/>
+        <IconSearch />
       </div>
     </div>
-    <div style="overflow:hidden;position:relative;display: flex">
+    <div style="overflow: hidden; position: relative; display: flex">
       <div style="overflow: auto">
-        <div style="display: flex; flex-wrap: wrap;align-content: flex-start;"
-             @scroll="onScroll"
-             ref="book-container">
+        <div
+          style="display: flex; flex-wrap: wrap; align-content: flex-start"
+          @scroll="onScroll"
+          ref="book-container"
+        >
           <div class="book_card" ref="upload-book">
             <div class="upload-book">
-              <IconAddBook class="add-book-icon"/>
+              <IconAddBook class="add-book-icon" />
               <div v-if="!isUploading">Upload Book</div>
               <div v-else class="progress-container">
-                <div class="progress-label">Uploading... {{ uploadProgress }}%</div>
+                <div class="progress-label">
+                  Uploading... {{ uploadProgress }}%
+                </div>
                 <div class="progress-bar">
-                  <div class="progress-bar-fill" :style="{ width: uploadProgress + '%' }"></div>
+                  <div
+                    class="progress-bar-fill"
+                    :style="{ width: uploadProgress + '%' }"
+                  ></div>
                 </div>
               </div>
-              <input :disabled="isUploading" class="file-upload" type="file" multiple accept="*" @change="uploadFile"/>
+              <input
+                :disabled="isUploading"
+                class="file-upload"
+                type="file"
+                multiple
+                accept="*"
+                @change="uploadFile"
+              />
             </div>
             <div v-if="uploadError" class="upload-error">{{ uploadError }}</div>
           </div>
-          <div v-for="book in books" :key="book.id" @click="downloadBook(book.id)"
-               @contextmenu.prevent="openContextMenu($event, book)" style="cursor: pointer; position: relative">
-            <div v-if="downloadingId === book.id" class="download-overlay" @click.stop>
-              <div class="spinner spinner-with-progress"
-                   :style="{ background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box` }"></div>
+          <div
+            v-for="book in books"
+            :key="book.id"
+            @click="downloadBook(book.id)"
+            @contextmenu.prevent="openContextMenu($event, book)"
+            style="cursor: pointer; position: relative"
+          >
+            <div
+              v-if="downloadingId === book.id"
+              class="download-overlay"
+              @click.stop
+            >
+              <div
+                class="spinner spinner-with-progress"
+                :style="{
+                  background: `conic-gradient(rgb(var(--primary-rgb)) 0deg, rgb(var(--primary-rgb)) ${Math.round(downloadProgress * 3.6)}deg, rgba(0,0,0,0) 0) border-box`,
+                }"
+              ></div>
             </div>
-            <div v-if="downloadQueue.includes(book.id)" class="download-overlay" @click.stop>
+            <div
+              v-if="downloadQueue.includes(book.id)"
+              class="download-overlay"
+              @click.stop
+            >
               <div class="spinner"></div>
             </div>
             <BookCoverThumbnail
-                :book="book"
-                :display-book-downloaded-icon="localBooks.includes(book.id.toString())"
-                :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
+              :book="book"
+              :display-book-downloaded-icon="
+                localBooks.includes(book.id.toString())
+              "
+              :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
             />
           </div>
         </div>
@@ -69,9 +122,26 @@
   <div v-if="showDeleteModal" class="modal" @click.stop>
     <div style="font-weight: 600">Remove from Library</div>
     <div>Are you sure you want to remove this book from your library?</div>
-    <div style="display:flex; gap: 8px; justify-content: flex-end; margin-top: 8px">
-      <button @click="cancelRemoveBook" :disabled="isDeleting" class="btn-ghost">Cancel</button>
-      <button @click="removeBookConfirmed" :disabled="isDeleting" class="btn-danger">
+    <div
+      style="
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 8px;
+      "
+    >
+      <button
+        @click="cancelRemoveBook"
+        :disabled="isDeleting"
+        class="btn-ghost"
+      >
+        Cancel
+      </button>
+      <button
+        @click="removeBookConfirmed"
+        :disabled="isDeleting"
+        class="btn-danger"
+      >
         {{ isDeleting ? 'Removing…' : 'Remove' }}
       </button>
     </div>
@@ -79,45 +149,46 @@
 </template>
 
 <script setup lang="ts">
-import {nextTick, onMounted, ref, toRaw, useTemplateRef} from 'vue'
-import {getKeysFromIndexedDb, loadFromBookDb, saveToBookDb, saveToIndexedDB} from './dbaccess'
-import BookCoverThumbnail from "./BookCoverThumbnail.vue";
-import Navigation from "./Navigation.vue";
-import IconAddBook from "../public/icons/education-book-add-svgrepo-com.svg"
-import {authHeaders, URL} from "./constants"
-import ContextMenu from "./components/ContextMenu.vue"
-import ContextMenuItem from "./components/ContextMenuItem.vue";
-import IconDownload from "../public/icons/download-svgrepo-com.svg"
-import IconRemove from "../public/icons/trash-bin-minimalistic-svgrepo-com.svg"
-import IconSearch from "../public/icons/magnifier-svgrepo-com.svg"
-import IconBookRead from "../public/icons/eye-svgrepo-com.svg"
-import {syncedUpdate} from "./sync";
-
+import { nextTick, onMounted, ref, toRaw, useTemplateRef } from 'vue'
+import {
+  getKeysFromIndexedDb,
+  loadFromBookDb,
+  saveToBookDb,
+  saveToIndexedDB,
+} from './dbaccess'
+import BookCoverThumbnail from './BookCoverThumbnail.vue'
+import Navigation from './Navigation.vue'
+import IconAddBook from '../public/icons/education-book-add-svgrepo-com.svg'
+import { authHeaders, URL } from './constants'
+import ContextMenu from './components/ContextMenu.vue'
+import ContextMenuItem from './components/ContextMenuItem.vue'
+import IconDownload from '../public/icons/download-svgrepo-com.svg'
+import IconRemove from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
+import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
+import IconBookRead from '../public/icons/eye-svgrepo-com.svg'
+import { syncedUpdate } from './sync'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
 
-
 async function postAsync(url: string, data: object) {
-  const response = await fetch(`${URL}/set_book_metadata`,
-      {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          ...authHeaders()
-        },
-        body: JSON.stringify(data)
-      })
+  const response = await fetch(`${URL}/set_book_metadata`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify(data),
+  })
   return await response.json()
 }
 
-
 async function fetchAsync(url: string) {
-  const response = await fetch(url, {headers: authHeaders()})
+  const response = await fetch(url, { headers: authHeaders() })
   if (response.status === 401) {
-    window.location.hash = "#/login"
-    throw "Authorization error - forward to login page."
+    window.location.hash = '#/login'
+    throw 'Authorization error - forward to login page.'
   }
   return await response.json()
 }
@@ -156,7 +227,7 @@ async function uploadFile(event: Event) {
 
   const totalBooks = files.length
   const progressOneBook = 1 / totalBooks
-  let currentBook = 0;
+  let currentBook = 0
   uploadProgress.value = 0
 
   for (let file of Object.values(files)) {
@@ -188,9 +259,13 @@ async function uploadFile(event: Event) {
         xhr.upload.onprogress = (e: ProgressEvent) => {
           if (e.lengthComputable) {
             const progressAllFiles = currentBook / totalBooks
-            const progressCurrentFile = (e.loaded / e.total);
-            const totalProgress = progressAllFiles + (progressCurrentFile * progressOneBook)
-            uploadProgress.value = Math.min(100, Math.round((totalProgress) * 100));
+            const progressCurrentFile = e.loaded / e.total
+            const totalProgress =
+              progressAllFiles + progressCurrentFile * progressOneBook
+            uploadProgress.value = Math.min(
+              100,
+              Math.round(totalProgress * 100),
+            )
           }
         }
 
@@ -233,16 +308,16 @@ const bookIdPendingDelete = ref<string | null>(null)
 const isDeleting = ref(false)
 
 async function toggleIsRead() {
-  let new_value = !displayBookContextMenu.value.fxtl_is_read;
+  let new_value = !displayBookContextMenu.value.fxtl_is_read
   displayBookContextMenu.value.fxtl_is_read = new_value
   const book = displayBookContextMenu.value
   displayBookContextMenu.value = null
 
-  if (await loadFromBookDb("books", book.id, null)) {
-    await saveToBookDb("books", toRaw(book), book.id)
+  if (await loadFromBookDb('books', book.id, null)) {
+    await saveToBookDb('books', toRaw(book), book.id)
   }
 
-  syncedUpdate("update-read-status", book.id, {fxtl_is_read: new_value})
+  syncedUpdate('update-read-status', book.id, { fxtl_is_read: new_value })
 }
 
 function confirmRemoveBook(identifier: string) {
@@ -256,7 +331,9 @@ async function removeBookConfirmed() {
   const identifier = bookIdPendingDelete.value
   isDeleting.value = true
   try {
-    const status_removed = await fetchAsync(`${URL}/remove_book?book_id=${identifier}`)
+    const status_removed = await fetchAsync(
+      `${URL}/remove_book?book_id=${identifier}`,
+    )
     if (status_removed.success) {
       const newBooks: BookMeta[] = []
       for (let book of books.value) {
@@ -283,12 +360,14 @@ async function downloadBook(identifier: string) {
   }
 
   // reset and show overlay for this book
-  displayBookContextMenu.value = null;
+  displayBookContextMenu.value = null
   downloadingId.value = identifier
   downloadProgress.value = 0
   downloadError.value = ''
   try {
-    const bookMetaData = await fetchAsync(`${URL}/get_book_metadata?book_id=${identifier}`)
+    const bookMetaData = await fetchAsync(
+      `${URL}/get_book_metadata?book_id=${identifier}`,
+    )
     const format = bookMetaData.formats?.[0]
 
     // Download book blob with progress using XHR
@@ -296,7 +375,6 @@ async function downloadBook(identifier: string) {
       const xhr = new XMLHttpRequest()
       xhr.open('GET', `${URL}/get_book?book_id=${identifier}&format=${format}`)
 
-      // auth header
       const headers = authHeaders()
       if (headers instanceof Headers) {
         headers.forEach((value, key) => xhr.setRequestHeader(key, value))
@@ -311,7 +389,10 @@ async function downloadBook(identifier: string) {
       xhr.responseType = 'blob'
       xhr.onprogress = (e: ProgressEvent) => {
         if (e.lengthComputable) {
-          downloadProgress.value = Math.min(100, Math.round((e.loaded / e.total) * 100))
+          downloadProgress.value = Math.min(
+            100,
+            Math.round((e.loaded / e.total) * 100),
+          )
         }
       }
       xhr.onload = () => {
@@ -327,8 +408,10 @@ async function downloadBook(identifier: string) {
       xhr.send()
     })
 
-    // Download cover (small) - no progress bar necessary
-    const cover = await fetch(`${URL}/get_book_cover?book_id=${identifier}&data_url=true`, {headers: authHeaders()})
+    const cover = await fetch(
+      `${URL}/get_book_cover?book_id=${identifier}&data_url=true`,
+      { headers: authHeaders() },
+    )
     const coverBase64 = await cover.text()
 
     // Save all to IndexedDB
@@ -357,19 +440,24 @@ function applyFilter() {
   loadBooks(0, true, searchValue)
 }
 
-const BOOKS_TO_PREFETCH = 20;
+const BOOKS_TO_PREFETCH = 20
 const booksLoading = ref(false)
 
-
-async function loadBooks(start_from: number, initialFetch?: boolean, filter?: string) {
+async function loadBooks(
+  start_from: number,
+  initialFetch?: boolean,
+  filter?: string,
+) {
   booksLoading.value = true
-  localBooks.value = await getKeysFromIndexedDb("books", "books") as string[]
+  localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
   if (filter) {
     filter = `&search_query=${encodeURIComponent(filter)}`
   } else {
-    filter = ""
+    filter = ''
   }
-  const fetchedBooks = await fetchAsync(`${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}&start_from=${start_from}${filter}`)
+  const fetchedBooks = await fetchAsync(
+    `${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}&start_from=${start_from}${filter}`,
+  )
   // Immediately display all books as soon as they are available.
   if (start_from === 0) {
     covers.value = {}
@@ -380,35 +468,40 @@ async function loadBooks(start_from: number, initialFetch?: boolean, filter?: st
   booksLoading.value = false
 
   // prefetch covers as data urls (requires auth header)
-  await Promise.all(fetchedBooks.map(async (b: any) => {
-    try {
-      const resp = await fetch(`${URL}/get_book_cover?book_id=${b.id}&data_url=true`, {headers: authHeaders()})
-      if (resp.ok) {
-        covers.value[b.id] = await resp.text()
-      }
-    } catch {
-    }
-  }))
+  await Promise.all(
+    fetchedBooks.map(async (b: any) => {
+      try {
+        const resp = await fetch(
+          `${URL}/get_book_cover?book_id=${b.id}&data_url=true`,
+          { headers: authHeaders() },
+        )
+        if (resp.ok) {
+          covers.value[b.id] = await resp.text()
+        }
+      } catch {}
+    }),
+  )
 
   // Wait for all books and covers to be displayed - then render everything - then check if there are scrollbars.
   // Then check if we need to fetch more books to fill the page.
   await nextTick()
-  let hasScrollBars = bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight;
-  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH;
+  let hasScrollBars =
+    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight
+  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH
   if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
     await loadBooks(start_from + BOOKS_TO_PREFETCH, true)
   }
   scrollEventDisabled = false
 }
 
-let scrollEventDisabled = false;
-
+let scrollEventDisabled = false
 
 function onScroll() {
   if (scrollEventDisabled) {
     return
   }
-  let maxScrollHeight = bookContainer.value!.scrollHeight - bookContainer.value!.clientHeight;
+  let maxScrollHeight =
+    bookContainer.value!.scrollHeight - bookContainer.value!.clientHeight
   let scrollHeight = bookContainer.value!.scrollTop
   let scrollBottom = maxScrollHeight - scrollHeight
   if (scrollBottom < 200) {
@@ -420,12 +513,24 @@ function onScroll() {
   }
 }
 
-
 onMounted(() => {
   loadBooks(0, true)
 })
 </script>
 
+<style>
+.tag {
+  background-color: var(--color-tag);
+  font-size: 0.9em;
+  color: #fffd;
+  font-weight: bold;
+  padding: 0 6px;
+  border-radius: 5px;
+  display: flex;
+  align-items: baseline;
+  margin-left: 5px;
+}
+</style>
 
 <style scoped>
 .add-book-icon {
@@ -458,7 +563,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   font-weight: bold;
-  cursor: pointer
+  cursor: pointer;
 }
 
 .progress-container {
@@ -546,7 +651,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: #777
+  color: #777;
 }
 
 .search-field-btn svg {
