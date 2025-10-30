@@ -5,7 +5,6 @@
       :class="{ containerExpanded: expandedToc }"
       :style="{ backgroundColor }"
     >
-
       <div
         v-if="showToc"
         class="tocButton"
@@ -36,36 +35,69 @@
     </div>
 
     <div v-if="showToc && expandedToc">
-        <div class="tocArea">
-          <div class="sidebarTabs">
-            <div @click="selectNavigation" :class="selectedTab === 'navigation' ? 'selectedTab' : ''"><IconBook/></div>
-            <div @click="selectView" :class="selectedTab === 'view' ? 'selectedTab' : ''"><IconBookRead/></div>
+      <div class="tocArea">
+        <div class="sidebarTabs">
+          <div
+            @click="selectNavigation"
+            :class="selectedTab === 'navigation' ? 'selectedTab' : ''"
+          >
+            <IconBook />
           </div>
+          <div
+            @click="selectView"
+            :class="selectedTab === 'view' ? 'selectedTab' : ''"
+          >
+            <IconBookRead />
+          </div>
+        </div>
 
-          <div v-if="selectedTab === 'navigation'">
-            <button @click="closeBook" style="margin-left: 50%;transform: translate(-50%, 0);">Back to library</button>
-            <hr style="margin: 1rem;"/>
-            <TocComponent
-                :toc="toc"
-                :current="currentHref"
-                :setLocation="setLocation"
-            />
-          </div>
+        <div v-if="selectedTab === 'navigation'">
+          <button
+            @click="closeBook"
+            style="margin-left: 50%; transform: translate(-50%, 0)"
+          >
+            Back to library
+          </button>
+          <hr style="margin: 1rem" />
+          <TocComponent
+            :toc="toc"
+            :current="currentHref"
+            :setLocation="setLocation"
+          />
+        </div>
 
-          <div v-if="selectedTab === 'view'">
-            <div class="buttonBar">
-              <span>Font size</span>
-              <button @click="increaseFontSize" style="border-top-right-radius:0;border-bottom-right-radius:0">+
-              </button>
-              <button @click="reduceFontSize" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
-            </div>
-            <div class="buttonBar">
-              <span>Spacing</span>
-              <button @click="increaseSpacing" style="border-top-right-radius:0;border-bottom-right-radius:0">+
-              </button>
-              <button @click="reduceSpacing" style="border-top-left-radius:0;border-bottom-left-radius:0">-</button>
-            </div>
+        <div v-if="selectedTab === 'view'">
+          <div class="buttonBar">
+            <span>Font size</span>
+            <button
+              @click="increaseFontSize"
+              style="border-top-right-radius: 0; border-bottom-right-radius: 0"
+            >
+              +
+            </button>
+            <button
+              @click="reduceFontSize"
+              style="border-top-left-radius: 0; border-bottom-left-radius: 0"
+            >
+              -
+            </button>
           </div>
+          <div class="buttonBar">
+            <span>Spacing</span>
+            <button
+              @click="increaseSpacing"
+              style="border-top-right-radius: 0; border-bottom-right-radius: 0"
+            >
+              +
+            </button>
+            <button
+              @click="reduceSpacing"
+              style="border-top-left-radius: 0; border-bottom-left-radius: 0"
+            >
+              -
+            </button>
+          </div>
+        </div>
       </div>
 
       <div v-if="expandedToc" class="tocBackground" @click="toggleToc"></div>
@@ -83,23 +115,25 @@ import {
   Transition,
   h as _h,
 } from 'vue'
-import IconBookRead from "../../../public/icons/eye-svgrepo-com.svg";
-import IconBook from "../../../public/icons/book-svgrepo-com.svg";
+import IconBookRead from '../../../public/icons/eye-svgrepo-com.svg'
+import IconBook from '../../../public/icons/book-svgrepo-com.svg'
 
 let currentFontSize = 140
 let currentSpacing = 1.4
-let selectedTab = ref("navigation")
+let selectedTab = ref('navigation')
 
 function selectNavigation() {
-  selectedTab.value = "navigation"
+  selectedTab.value = 'navigation'
 }
 
-function selectView(){
-  selectedTab.value = "view"
+function selectView() {
+  selectedTab.value = 'view'
 }
 
 function increaseFontSize() {
-  if (!rendition) {return}
+  if (!rendition) {
+    return
+  }
   currentFontSize += 20
   updateStyle()
 }
@@ -109,7 +143,9 @@ function reduceFontSize() {
 }
 
 function increaseSpacing() {
-  if (!rendition) {return}
+  if (!rendition) {
+    return
+  }
   currentSpacing += 0.2
   updateStyle()
 }
@@ -119,15 +155,18 @@ function reduceSpacing() {
 }
 
 function updateStyle() {
-  rendition.renderer.setStyles?.(getCSS({
-    spacing: currentSpacing,
-    justify: true,
-    hyphenate: true,
-    fontSize: currentFontSize}))
+  rendition.renderer.setStyles?.(
+    getCSS({
+      spacing: currentSpacing,
+      justify: true,
+      hyphenate: true,
+      fontSize: currentFontSize,
+    }),
+  )
 }
 
 function closeBook() {
-  window.location.hash='/'
+  window.location.hash = '/'
 }
 
 const TocComponent = defineComponent({
@@ -226,7 +265,7 @@ const props = defineProps({
     default: true,
   },
   location: {
-    type: [String, Number]
+    type: [String, Number],
   },
   title: {
     type: String,
@@ -240,8 +279,8 @@ const props = defineProps({
     default: '#fff',
   },
   onBtnNext: {
-    type: Function
-  }
+    type: Function,
+  },
 })
 
 const book = reactive({
@@ -306,11 +345,14 @@ const onGetRendition = (val) => {
   rendition = val
   const title = book.metadata?.title
   bookName.value = title || ''
-  val.renderer.setStyles?.(getCSS({
-    spacing: 1.4,
-    justify: true,
-    hyphenate: true,
-    fontSize: 140}))
+  val.renderer.setStyles?.(
+    getCSS({
+      spacing: 1.4,
+      justify: true,
+      hyphenate: true,
+      fontSize: 140,
+    }),
+  )
 }
 
 const onTocChange = (_toc) => {
@@ -527,7 +569,7 @@ const setLocation = (href, close = true) => {
   border-radius: 2px;
   outline: none;
   cursor: pointer;
-  z-index:99;
+  z-index: 99;
 }
 
 .tocButtonBar {
