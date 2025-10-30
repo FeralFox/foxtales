@@ -364,8 +364,8 @@ const toggleToc = () => {
 }
 
 const next = () => {
-  bookRef.value?.nextPage()
   props.onBtnNext()
+  bookRef.value?.nextPage()
 }
 const pre = () => {
   bookRef.value?.prevPage()
