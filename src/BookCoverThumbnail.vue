@@ -48,7 +48,6 @@ const truncated_title = computed(() => {
 </script>
 <style>
 .book_card {
-  padding: 5px;
   font-weight: bold;
   margin: 1rem;
   white-space: nowrap;
@@ -73,9 +72,10 @@ const truncated_title = computed(() => {
   background-size: cover;
   width: 100%;
   height: calc(100% - 2rem);
-  border: 1px solid #000;
+  border: 1px solid var(--book-border);
   border-radius: 5px;
   margin-bottom: 5px;
+  box-sizing: border-box;
 }
 .episode-title {
   font-weight: bold;

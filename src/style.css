@@ -124,6 +124,7 @@ button:after {
       --transition-default: ease-in-out 0.2s;
       --color-tag: #614630;
       --primary: #BA411B;
-      --primary-rgb: 186, 65, 27
+      --primary-rgb: 186, 65, 27;
+      --book-border: #444
   }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

@@ -556,7 +556,7 @@ onMounted(() => {
   position: relative;
   width: 100%;
   height: calc(100% - 2rem);
-  border: 2px dashed #0009;
+  border: 2px dashed var(--book-border);
   border-radius: 5px;
   margin-bottom: 5px;
   color: #0009;
@@ -566,6 +566,7 @@ onMounted(() => {
   align-items: center;
   font-weight: bold;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .progress-container {
@@ -641,7 +642,7 @@ onMounted(() => {
   flex-grow: 1;
   padding: 0.5rem;
   border-radius: 5px;
-  border: 1px solid #777;
+  border: 1px solid var(--book-border);
 }
 
 .search-field-btn {
