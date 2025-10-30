@@ -4,13 +4,19 @@
       <h2>Login</h2>
       <label>
         Username
-        <input v-model="username" autocomplete="username" />
+        <input v-model="username" autocomplete="username" autofocus />
       </label>
       <label>
         Password
-        <input v-model="password" type="password" autocomplete="current-password" />
+        <input
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+        />
       </label>
-      <button type="submit" :disabled="loading">{{ loading ? 'Signing in…' : 'Sign in' }}</button>
+      <button type="submit" :disabled="loading">
+        {{ loading ? 'Signing in…' : 'Sign in' }}
+      </button>
       <p class="error" v-if="error">{{ error }}</p>
     </form>
   </div>
@@ -37,9 +43,9 @@ async function onSubmit() {
     const res = await fetch(`${URL}/token`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: body.toString()
+      body: body.toString(),
     })
 
     if (!res.ok) {
@@ -95,5 +101,7 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }
-.error { color: #c00; }
+.error {
+  color: #c00;
+}
 </style>
