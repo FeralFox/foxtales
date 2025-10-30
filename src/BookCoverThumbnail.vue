@@ -54,8 +54,8 @@ const truncated_title = computed(() => {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-  width: 11em;
-  height: 18em;
+  width: 10em;
+  height: 17em;
   font-size: 100%;
 }
 
