@@ -448,7 +448,9 @@ async function loadBooks(
   initialFetch?: boolean,
   filter?: string,
 ) {
-  booksLoading.value = true
+  if (initialFetch) {
+    booksLoading.value = true
+  }
   localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
   if (filter) {
     filter = `&search_query=${encodeURIComponent(filter)}`
