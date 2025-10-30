@@ -4,21 +4,27 @@
   <img alt="Fallback image description" src="public/icons/logo_full.png">
 </picture>
 
-Foxtales is an ebook reader, written as a Progressive Web App.
+Your self-hosted, Calibre-powered reading sanctuary. Read your ebooks anywhere, on any device, fully offline.
 
-## Current features
+Foxtales decouples your ebook library from a single machine, giving you and your family a private, reader-friendly web app that syncs your progress across all your devices: Desktops, Smartphones, Tablets and Ebook Readers.
 
-The project is in a very(!) early state and is not considered to be usable already. However, the following features
-are prepared and considered during the development:
+The development is focused on these features:
 
-* Offline reading of selected books
+* Offline support: Read your most loved books in the deepest desert.
 * Ebook-Reader friendly
 * Mobile friendly
 * Installable Web-App
 * Easy to self-host
 * Sync of reading progress across devices
-* Multiple users
-* Support Calibre library format
+* Avoid vendor lock-in by managing the whole library in Calibre-compatible format
+* Support of multiple users (Not there yet, sorry, it's only for you atm 💝)
+
+## Installation
+
+Just copy the [docker-compose.yaml](docker-compose.yaml) to your machine or server, modify the variables so that it
+suits your needs and run it using `docker compose up`
+
+⚠️ I do not have to tell you that the password "password" is a bad idea, so please change it ;-)
 
 ## Supported file formats
 
@@ -29,30 +35,30 @@ are prepared and considered during the development:
 * KF8 (AZW3)
 * FB2
 
-## Technical stuff
-
-The frontend is written in VueJS, using foliate-js to display the ebooks. 
-
-The backend is written in Python, using FastAPI and calibredb to communicate with the shipped Calibre instance.
-
-The Docker container is tested on a Raspberry Pi. 
-
 ## Roadmap and planned features
 
 | Feature                                | Status   |
 |----------------------------------------|----------|
 | Provide Docker container               | Done     |
-| Implement pagination for big libraries | Planned  |
-| Sync reading progress                  | Prepared |
+| Implement pagination for big libraries | Done     |
+| Sync reading progress                  | Done     |
+| Implement search features              | Done     |
 | Multi-User                             | Prepared |
-| Implement search features              | Planned  |
-| Browse books by tags                   | Planned  |
+| Browse books by tags                   | Prepared |
 | Wishlist books                         | Planned  |
 | Add book discovery                     | Planned  |
 | Online Demo                            | Planned  |
 | Annotations                            | Planned  |
 
+
+## Technical stuff
+
+The frontend is written in VueJS, using foliate-js to display the ebooks.
+
+The backend is written in Python, using FastAPI and calibredb to communicate with the shipped Calibre instance.
+
 ## Contributions
 * Based on https://github.com/jinhuan138/vue-book-reader
 * Using https://github.com/johnfactotum/foliate-js
+* Backend heavily depends on https://calibre-ebook.com
 * Icons from www.svgrepo.com
