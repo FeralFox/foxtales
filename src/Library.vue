@@ -284,7 +284,7 @@ async function uploadFile(event: Event) {
         xhr.send(formData)
       })
 
-      await loadBooks(0, true)
+      await loadBooks(0, false)
     } catch (e: any) {
       console.error(e)
       uploadError.value = e?.message || 'Upload failed'
@@ -437,7 +437,7 @@ async function downloadBook(identifier: string) {
 
 function applyFilter() {
   const searchValue = searchField.value!.value
-  loadBooks(0, true, searchValue)
+  loadBooks(0, true, true, searchValue)
 }
 
 const BOOKS_TO_PREFETCH = 20
@@ -445,10 +445,11 @@ const booksLoading = ref(false)
 
 async function loadBooks(
   start_from: number,
+  displayLoadingOverlay?: boolean,
   initialFetch?: boolean,
   filter?: string,
 ) {
-  if (initialFetch) {
+  if (displayLoadingOverlay) {
     booksLoading.value = true
   }
   localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
@@ -467,9 +468,20 @@ async function loadBooks(
   } else {
     books.value = [...books.value, ...fetchedBooks]
   }
+
+  // Wait for all books and covers to be displayed - then render everything - then check if there are scrollbars.
+  // Then check if we need to fetch more books to fill the page.
+  await nextTick()
+  let hasScrollBars =
+    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight
+  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH
+  if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
+    await loadBooks(start_from + BOOKS_TO_PREFETCH, true, true)
+  }
+
   booksLoading.value = false
 
-  // prefetch covers as data urls (requires auth header)
+  // Fetch covers as data urls
   await Promise.all(
     fetchedBooks.map(async (b: any) => {
       try {
@@ -484,15 +496,6 @@ async function loadBooks(
     }),
   )
 
-  // Wait for all books and covers to be displayed - then render everything - then check if there are scrollbars.
-  // Then check if we need to fetch more books to fill the page.
-  await nextTick()
-  let hasScrollBars =
-    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight
-  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH
-  if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
-    await loadBooks(start_from + BOOKS_TO_PREFETCH, true)
-  }
   scrollEventDisabled = false
 }
 
@@ -511,12 +514,12 @@ function onScroll() {
       return
     }
     scrollEventDisabled = true
-    loadBooks(books.value.length, false)
+    loadBooks(books.value.length, false, false)
   }
 }
 
 onMounted(() => {
-  loadBooks(0, true)
+  loadBooks(0, true, true)
 })
 </script>
 
