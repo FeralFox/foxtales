@@ -21,16 +21,20 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, CalibreListData, FullBookMetadata
+from calibredb import CalibreDb, CalibreListData, FullBookMetadata, FxtlData, UserData
+from lib import is_correct_password, hash_new_password
 
 BASE_PATH = pathlib.Path(__file__).parent.parent
 CLIENT_DIR = pathlib.Path(os.getenv("FOXTALES_CLIENT_DIR", BASE_PATH / "dist"))
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEFAULT_USER = os.getenv("DEFAULT_USER")
 DEFAULT_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD")
+DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL")
 LIBRARY_PATH = pathlib.Path(os.getenv("FOXTALES_LIBRARY_PATH", BASE_PATH / "volume" / "library"))
 COMMON_LIBRARY_PATH = LIBRARY_PATH / "common"
+USER_LIBRARY_PATH = LIBRARY_PATH / "users"
 DEFAULT_USER_LIBRARY_PATH = LIBRARY_PATH / "users" / DEFAULT_USER
+DEFAULT_LIB_PATH = pathlib.Path("/home/nightowl/defaultLibrary")
 assert SECRET_KEY, "No SECRET_KEY environment variable provided"
 assert DEFAULT_USER, "No DEFAULT_USER environment variable provided"
 assert DEFAULT_PASSWORD, "No DEFAULT_USER_PASSWORD environment variable provided"
@@ -115,7 +119,21 @@ active_users: dict[str, ActiveUserData] = {}
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     username = form_data.username
     password = form_data.password
-    library = CalibreDb(f"http://localhost:8080/#{username}", username, password)
+    try:
+        library_path = USER_LIBRARY_PATH / username
+        if not library_path.exists():
+            # User not found
+            raise ValueError()
+        library = CalibreDb(library_path)
+        user_data = library.get_user_data().user
+        if not is_correct_password(user_data.salt, user_data.password, password):
+            # Incorrect password
+            raise ValueError()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
+        )
     try:
         library.get_custom_columns()  # Check if user is correctly authenticated.
     except subprocess.CalledProcessError:
@@ -126,6 +144,16 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
     active_users[username] = ActiveUserData(username=username, library=library)
     return Token(access_token=access_token, token_type="bearer")
 
+@app.post("/register")
+async def register(username: str, password: str, email: str):
+    forbidden_symbols = set("'\"")
+    forbidden_symbols_user = forbidden_symbols.union(":.")
+    if forbidden_symbols_user.intersection(username):
+        raise HTTPException(400, f"The username must not contain any of these characters: {', '.join(forbidden_symbols_user)}")
+    if forbidden_symbols.intersection(password):
+        raise HTTPException(400, f"The password must not contain any of these characters: {', '.join(forbidden_symbols)}")
+    create_user(username, password, email)
+    return True
 
 # Serve index.html for the root
 @app.get("/")
@@ -208,33 +236,35 @@ async def serve_spa(path: str):
         return FileResponse(CLIENT_DIR / path)
     return FileResponse(CLIENT_DIR / "index.html")
 
-def create_user(username: str, password: str):
-    os.system(f'''calibre-debug -c "from calibre.srv.users import *; m = UserManager('{USER_DB_PATH}'); m.add_user('{username}', '{password}', readonly=False)"''')
-
+def create_user(username: str, password: str, email: str):
+    # Assertions: Prevent users from getting access during registration by modifying the string below
+    assert not "'" in username
+    assert not '"' in username
+    assert not "'" in password
+    assert not '"' in password
+    library_path = USER_LIBRARY_PATH / username
+    load_default_data(library_path)
+    salt, hashed_pw = hash_new_password(password)
+    db = CalibreDb(library_path)
+    db.store_user_data(FxtlData(UserData(
+        username=username,
+        password=hashed_pw,
+        salt=salt,
+        email=email
+    )))
 
 def load_default_data(library_path: pathlib.Path):
-    default_lib_path = pathlib.Path("/home/nightowl/defaultLibrary")
-
-    for file in default_lib_path.rglob("*"):
+    for file in DEFAULT_LIB_PATH.rglob("*"):
         # Don't use shutil.copytree as it fails with a PermissionError for whatever reasons..
         if file.is_dir():
             continue
-        relative_path = file.relative_to(default_lib_path)
+        relative_path = file.relative_to(DEFAULT_LIB_PATH)
         new_file = library_path / relative_path
         new_file.parent.mkdir(parents=True, exist_ok=True)
         new_file.write_bytes(file.read_bytes())
 
 if not DEFAULT_USER_LIBRARY_PATH.exists() or not (DEFAULT_USER_LIBRARY_PATH / "metadata.db").exists():
-    create_user(DEFAULT_USER, DEFAULT_PASSWORD)
-    load_default_data(DEFAULT_USER_LIBRARY_PATH)
+    create_user(DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_USER_EMAIL)
     print("~~~ Created default user library. ~~~")
-
-
-def run_calibre_server():
-    os.system(f"calibre-server --userdb '{USER_DB_PATH}' --enable-auth --port 8080 "
-              f"/config/libraries/users/{DEFAULT_USER}")
-
-CalibreDb(DEFAULT_USER_LIBRARY_PATH.as_posix(), DEFAULT_USER, DEFAULT_PASSWORD).upgrade_library()
-threading.Thread(target=run_calibre_server).start()
 
 uvicorn.run(app, host="0.0.0.0", port=8000)

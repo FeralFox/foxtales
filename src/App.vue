@@ -4,13 +4,15 @@ import Library from './Library.vue'
 import Book from './Book.vue'
 import OfflineLibrary from "./OfflineLibrary.vue";
 import Login from './Login.vue'
+import Register from './Register.vue'
 
-const offlineRoutes = ["/", "/book"]
+const offlineRoutes = ["/", "/book", "/register", "/login"]
 
 const routes: Record<string, any> = {
   '/': OfflineLibrary,
   '/lib': Library,
   '/login': Login,
+  '/register': Register,
   '/book': Book
 }
 

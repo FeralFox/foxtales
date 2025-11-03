@@ -71,16 +71,46 @@ class CalibreListData:
 class FullBookMetadata(CalibreListData):
     pass
 
+
+@dataclasses.dataclass
+class UserData:
+    username: str
+    password: str
+    salt: str
+    email: str
+
+    @classmethod
+    def from_json(cls, data: dict) -> "UserData":
+        return cls(**data)
+
+
+@dataclasses.dataclass
+class FxtlData:
+    user: UserData
+
+    @classmethod
+    def load(cls, file: pathlib.Path) -> "FxtlData":
+        data = json.loads(file.read_text())
+        return cls(user=UserData.from_json(data["user"]))
+
+    def save(self, file: pathlib.Path):
+        file.write_text(json.dumps(dataclasses.asdict(self)))
+
+
 class CalibreDb:
-    def __init__(self, host: Union[str, pathlib.Path], user: str, password: str):
-        self._host = host
-        self._user = user
-        self._password = password
+    def __init__(self, host: pathlib.Path):
+        self._path = host
+        self._user = host.name
+        self.upgrade_library()
+
+    def get_user_data(self) -> FxtlData:
+        return FxtlData.load(self._path / "fxtl_data.json")
+
+    def store_user_data(self, user_data: FxtlData):
+        user_data.save(self._path / "fxtl_data.json")
 
     def _get_auth(self):
-        if isinstance(self._host, pathlib.Path):
-            return ['--with-library', self._host.as_posix()]
-        return ['--with-library', self._host, "--username", self._user, "--password", self._password]
+        return ['--with-library', self._path.as_posix()]
 
     def upgrade_library(self):
         """Add extra fields required by foxtales to Calibre library."""
