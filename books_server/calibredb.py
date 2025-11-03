@@ -105,6 +105,14 @@ class CalibreDb:
         self._user = host.name
         self.upgrade_library()
 
+    @functools.lru_cache(maxsize=1000)
+    def get_book_id_by_uuid(self, uuid: str) -> Optional[int]:
+        result = self.list_books(f"uuid:{uuid}", fields="")
+        try:
+            return result[0].id
+        except (IndexError, AttributeError):
+            raise FileNotFoundError(f"No book with uuid {uuid} found")
+
     def get_user_data(self) -> FxtlData:
         return FxtlData.load(self._path / "fxtl_data.json")
 

@@ -1,12 +1,17 @@
 <template>
   <div class="navigation">
-    <Logo class="logo" style="opacity: 1"/>
-    <div style="width: 80%;background-color:#fff6;height:2px"/>
-    <a :class="props.active === 'local' ? 'is-active' : ''" href="#/"><BookStackIcon class="logo" />
-      Local</a>
-    <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"><LibraryIcon class="logo"/>Library</a>
+    <Logo class="logo" style="opacity: 1" />
+    <div style="width: 80%; background-color: #fff6; height: 2px" />
+    <a :class="props.active === 'local' ? 'is-active' : ''" href="#/"
+      ><BookStackIcon class="logo" /> Local</a
+    >
+    <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"
+      ><LibraryIcon class="logo" />Library</a
+    >
     <div style="flex-grow: 1" />
-    <button v-if="isAuthenticated" class="logout-btn" @click="logout">Logout</button>
+    <button v-if="isAuthenticated" class="logout-btn" @click="logout">
+      Logout
+    </button>
   </div>
 </template>
 <style scoped>
@@ -20,7 +25,7 @@
   letter-spacing: 0.7px;
   width: 4rem;
   min-width: 4rem;
-  text-align:center;
+  text-align: center;
   font-size: 90%;
 }
 .navigation a {
@@ -34,13 +39,13 @@
 }
 .navigation a.is-active {
   background-color: white;
-  color:black;
+  color: black;
 }
 .navigation a:hover {
-  background-color: #fff3
+  background-color: #fff3;
 }
 .navigation a.is-active:hover {
-  background-color: white
+  background-color: white;
 }
 .logo {
   width: 2.5rem;
@@ -58,7 +63,7 @@
   font-size: 0.8em;
   padding: 0.25rem 0.5rem;
   cursor: pointer;
-  transition: var(--transition-default)
+  transition: var(--transition-default);
 }
 .logout-btn:hover {
   background: #fff3;
@@ -66,16 +71,16 @@
 </style>
 <script setup lang="ts">
 import { computed } from 'vue'
-import Logo from "../public/icons/logo_dark.svg"
-import BookStackIcon from "../public/icons/books-stack-svgrepo-com.svg"
-import LibraryIcon from "../public/icons/books-arranged-vertically-svgrepo-com.svg"
+import Logo from '../public/icons/logo_dark.svg'
+import BookStackIcon from '../public/icons/books-stack-svgrepo-com.svg'
+import LibraryIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
 
-const props = defineProps(["active"]) 
+const props = defineProps(['active'])
 
 const isAuthenticated = computed(() => !!localStorage.getItem('auth_token'))
 
 function logout() {
   localStorage.removeItem('auth_token')
-  window.location.hash = '/'
+  window.location.href = '/#/lib'
 }
 </script>

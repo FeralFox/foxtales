@@ -60,6 +60,7 @@ async function onSubmit() {
     const data = await res.json()
     // Save token for subsequent requests
     localStorage.setItem('auth_token', data.access_token)
+    localStorage.setItem('current_user', username.value)
     // Navigate to library view
     window.location.hash = '/lib'
   } catch (e: any) {

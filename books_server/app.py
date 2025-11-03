@@ -172,8 +172,9 @@ async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
 
 
 @app.get("/remove_book")
-async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int) -> Status:
-    current_user.library.remove_book(book_id)
+async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> Status:
+    library = current_user.library
+    library.remove_book(library.get_book_id_by_uuid(book_uuid))
     return Status(success=True)
 
 
@@ -191,13 +192,17 @@ async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current
     return book_list
 
 @app.get("/get_book_metadata")
-async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int) -> FullBookMetadata:
-    return current_user.library.get_book_metadata(book_id)
+async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> FullBookMetadata:
+    lib = current_user.library
+    book_id = lib.get_book_id_by_uuid(book_uuid)
+    return lib.get_book_metadata(book_id)
 
 
 @app.get("/get_book_cover")
-async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int, data_url: bool = False):
-    mtype, data = current_user.library.retrieve_cover(book_id)
+async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, data_url: bool = False):
+    lib = current_user.library
+    book_id = lib.get_book_id_by_uuid(book_uuid)
+    mtype, data = lib.retrieve_cover(book_id)
     if data_url:
         b64 = base64.b64encode(data).decode("utf-8")
         return f"data:{mtype};base64,{b64}"
@@ -206,7 +211,7 @@ async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_cur
 
 
 class BookMetaData(BaseModel):
-    book_id: int
+    book_uuid: str
     fxtl_progress: Optional[float] = None
     fxtl_progress_update: Optional[str] = None
     fxtl_is_read: Optional[bool] = None
@@ -214,7 +219,7 @@ class BookMetaData(BaseModel):
 
 @app.post("/set_book_metadata")
 async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
-    book_id = data.book_id
+    book_id = current_user.library.get_book_id_by_uuid(data.book_uuid)
     if data.fxtl_progress is not None:
         current_user.library.set_custom_value(book_id, "fxtl_progress",
                                               str(data.fxtl_progress))
@@ -225,7 +230,9 @@ async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_
 
 
 @app.get("/get_book")
-async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_id: int, format: str):
+async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):
+    lib = current_user.library
+    book_id = lib.get_book_id_by_uuid(book_uuid)
     mtype, data = current_user.library.retrieve_book(book_id, format)
     return Response(content=data, media_type=mtype)
 

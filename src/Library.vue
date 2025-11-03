@@ -7,18 +7,18 @@
     :title="displayBookContextMenu?.title"
   >
     <ContextMenuItem
-      @click="downloadBook(displayBookContextMenu.id)"
+      @click="downloadBook(displayBookContextMenu!.uuid)"
       :icon="IconDownload"
     >
       Download to Device
     </ContextMenuItem>
     <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
       {{
-        displayBookContextMenu.fxtl_is_read ? 'Mark as unread' : 'Mark as read'
+        displayBookContextMenu!.fxtl_is_read ? 'Mark as unread' : 'Mark as read'
       }}
     </ContextMenuItem>
     <ContextMenuItem
-      @click="confirmRemoveBook(displayBookContextMenu.id)"
+      @click="confirmRemoveBook(displayBookContextMenu!.uuid)"
       :icon="IconRemove"
     >
       Remove from Library
@@ -79,13 +79,13 @@
           </div>
           <div
             v-for="book in books"
-            :key="book.id"
-            @click="downloadBook(book.id)"
+            :key="book.uuid"
+            @click="downloadBook(book.uuid)"
             @contextmenu.prevent="openContextMenu($event, book)"
             style="cursor: pointer; position: relative"
           >
             <div
-              v-if="downloadingId === book.id"
+              v-if="downloadingId === book.uuid"
               class="download-overlay"
               @click.stop
             >
@@ -97,7 +97,7 @@
               ></div>
             </div>
             <div
-              v-if="downloadQueue.includes(book.id)"
+              v-if="downloadQueue.includes(book.uuid)"
               class="download-overlay"
               @click.stop
             >
@@ -106,9 +106,9 @@
             <BookCoverThumbnail
               :book="book"
               :display-book-downloaded-icon="
-                localBooks.includes(book.id.toString())
+                localBooks.includes(book.uuid.toString())
               "
-              :image="covers[book.id] ? `url(${covers[book.id]})` : ''"
+              :image="covers[book.uuid] ? `url(${covers[book.uuid]})` : ''"
             />
           </div>
         </div>
@@ -195,6 +195,7 @@ async function fetchAsync(url: string) {
 
 interface BookMeta {
   id: string
+  uuid: string
   title: string
   fxtl_is_read: boolean
 }
@@ -210,7 +211,7 @@ const isUploading = ref(false)
 const uploadProgress = ref(0)
 const uploadError = ref('')
 
-const displayBookContextMenu = ref<any>(null)
+const displayBookContextMenu = ref<BookMeta | null>(null)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 
@@ -308,16 +309,16 @@ const bookIdPendingDelete = ref<string | null>(null)
 const isDeleting = ref(false)
 
 async function toggleIsRead() {
-  let new_value = !displayBookContextMenu.value.fxtl_is_read
-  displayBookContextMenu.value.fxtl_is_read = new_value
+  let new_value = !displayBookContextMenu.value!.fxtl_is_read
+  displayBookContextMenu.value!.fxtl_is_read = new_value
   const book = displayBookContextMenu.value
   displayBookContextMenu.value = null
 
-  if (await loadFromBookDb('books', book.id, null)) {
-    await saveToBookDb('books', toRaw(book), book.id)
+  if (await loadFromBookDb('books', book!.uuid, null)) {
+    await saveToBookDb('books', toRaw(book), book!.uuid)
   }
 
-  syncedUpdate('update-read-status', book.id, { fxtl_is_read: new_value })
+  syncedUpdate('update-read-status', book!.uuid, { fxtl_is_read: new_value })
 }
 
 function confirmRemoveBook(identifier: string) {
@@ -332,12 +333,12 @@ async function removeBookConfirmed() {
   isDeleting.value = true
   try {
     const status_removed = await fetchAsync(
-      `${URL}/remove_book?book_id=${identifier}`,
+      `${URL}/remove_book?book_uuid=${identifier}`,
     )
     if (status_removed.success) {
       const newBooks: BookMeta[] = []
       for (let book of books.value) {
-        if (book.id !== identifier) newBooks.push(book)
+        if (book.uuid !== identifier) newBooks.push(book)
       }
       books.value = newBooks
     }
@@ -353,27 +354,27 @@ function cancelRemoveBook() {
   bookIdPendingDelete.value = null
 }
 
-async function downloadBook(identifier: string) {
+async function downloadBook(uuid: string) {
   if (downloadingId.value) {
-    downloadQueue.value.push(identifier)
+    downloadQueue.value.push(uuid)
     return
   }
 
   // reset and show overlay for this book
   displayBookContextMenu.value = null
-  downloadingId.value = identifier
+  downloadingId.value = uuid
   downloadProgress.value = 0
   downloadError.value = ''
   try {
     const bookMetaData = await fetchAsync(
-      `${URL}/get_book_metadata?book_id=${identifier}`,
+      `${URL}/get_book_metadata?book_uuid=${uuid}`,
     )
     const format = bookMetaData.formats?.[0]
 
     // Download book blob with progress using XHR
     const blob: Blob = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
-      xhr.open('GET', `${URL}/get_book?book_id=${identifier}&format=${format}`)
+      xhr.open('GET', `${URL}/get_book?book_uuid=${uuid}&format=${format}`)
 
       const headers = authHeaders()
       if (headers instanceof Headers) {
@@ -409,16 +410,18 @@ async function downloadBook(identifier: string) {
     })
 
     const cover = await fetch(
-      `${URL}/get_book_cover?book_id=${identifier}&data_url=true`,
+      `${URL}/get_book_cover?book_uuid=${uuid}&data_url=true`,
       { headers: authHeaders() },
     )
     const coverBase64 = await cover.text()
+    bookMetaData.fxtl_owner =
+      bookMetaData.fxtl_owner || localStorage.getItem('current_user')
 
     // Save all to IndexedDB
-    await saveToIndexedDB('books', 'books', bookMetaData, identifier)
-    await saveToIndexedDB(`cover`, 'cover', coverBase64, identifier)
-    await saveToIndexedDB(`data`, 'data', blob, identifier)
-    localBooks.value.push(bookMetaData.id.toString())
+    await saveToIndexedDB('books', 'books', bookMetaData, uuid)
+    await saveToIndexedDB(`cover`, 'cover', coverBase64, uuid)
+    await saveToIndexedDB(`data`, 'data', blob, uuid)
+    localBooks.value.push(bookMetaData.uuid.toString())
   } catch (e: any) {
     console.error(e)
     downloadError.value = e?.message || 'Download failed'
@@ -486,11 +489,11 @@ async function loadBooks(
     fetchedBooks.map(async (b: any) => {
       try {
         const resp = await fetch(
-          `${URL}/get_book_cover?book_id=${b.id}&data_url=true`,
+          `${URL}/get_book_cover?book_uuid=${b.uuid}&data_url=true`,
           { headers: authHeaders() },
         )
         if (resp.ok) {
-          covers.value[b.id] = await resp.text()
+          covers.value[b.uuid] = await resp.text()
         }
       } catch {}
     }),
