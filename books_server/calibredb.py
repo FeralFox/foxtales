@@ -44,6 +44,8 @@ class CalibreListData:
 
     @classmethod
     def from_dict(cls, data: dict) -> "CalibreListData":
+        # Calibre returns the full book path for local library. We only want to have the format.
+        formats = [f.rsplit(".", 1)[-1] for f in data.get("formats", [])]
         return cls(
             id=data["id"],
             title=data.get("title", ""),
@@ -51,7 +53,7 @@ class CalibreListData:
             author_sort=data.get("author_sort", ""),
             authors=data.get("authors", ""),
             cover=data.get("cover", ""),
-            formats=data.get("formats", []),
+            formats=formats,
             identifiers=data.get("identifiers", {}),
             languages=data.get("languages", []),
             last_modified=data.get("last_modified", ""),

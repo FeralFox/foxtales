@@ -377,7 +377,7 @@ const setLocation = (href, close = true) => {
   expandedToc.value = !close
 }
 </script>
-<style scoped>
+<style>
 /* container */
 .container {
   overflow: hidden;
@@ -495,7 +495,7 @@ const setLocation = (href, close = true) => {
   text-align: left;
   padding: 0.9em 1em;
   border-bottom: 1px solid #ddd;
-  color: #aaa;
+  color: #777;
   box-sizing: border-box;
   outline: none;
   cursor: pointer;
