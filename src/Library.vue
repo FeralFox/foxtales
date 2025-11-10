@@ -45,12 +45,8 @@
       </div>
     </div>
     <div style="overflow: hidden; position: relative; display: flex">
-      <div style="overflow: auto">
-        <div
-          style="display: flex; flex-wrap: wrap; align-content: flex-start"
-          @scroll="onScroll"
-          ref="book-container"
-        >
+      <div style="overflow: auto" @scroll="onScroll" ref="book-container">
+        <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
           <div class="book_card" ref="upload-book">
             <div class="upload-book">
               <IconAddBook class="add-book-icon" />
@@ -443,8 +439,48 @@ function applyFilter() {
   loadBooks(0, true, true, searchValue)
 }
 
-const BOOKS_TO_PREFETCH = 20
+const BOOKS_TO_PREFETCH = 10
 const booksLoading = ref(false)
+
+async function preloadBooks(
+  filter: string | undefined,
+  start_from: number,
+  initialFetch: boolean | undefined,
+) {
+  localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
+  if (filter) {
+    filter = `&search_query=${encodeURIComponent(filter)}`
+  } else {
+    filter = ''
+  }
+  const fetchedBooks = await fetchAsync(
+    `${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}
+    &start_from=${start_from}${filter}`,
+  )
+  // Immediately display all books as soon as they are available.
+  if (start_from === 0) {
+    covers.value = {}
+    books.value = fetchedBooks
+  } else {
+    books.value = [...books.value, ...fetchedBooks]
+  }
+
+  // Wait for all books and covers to be displayed - then render everything
+  // - then check if there are scrollbars.
+  // Then check if we need to fetch more books to fill the page.
+  await nextTick()
+  let hasScrollBars =
+    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight + 150
+  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH
+  if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
+    return [
+      ...fetchedBooks,
+      ...(await preloadBooks(filter, start_from + BOOKS_TO_PREFETCH, true)),
+    ]
+  } else {
+    return fetchedBooks
+  }
+}
 
 async function loadBooks(
   start_from: number,
@@ -455,33 +491,7 @@ async function loadBooks(
   if (displayLoadingOverlay) {
     booksLoading.value = true
   }
-  localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
-  if (filter) {
-    filter = `&search_query=${encodeURIComponent(filter)}`
-  } else {
-    filter = ''
-  }
-  const fetchedBooks = await fetchAsync(
-    `${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}&start_from=${start_from}${filter}`,
-  )
-  // Immediately display all books as soon as they are available.
-  if (start_from === 0) {
-    covers.value = {}
-    books.value = fetchedBooks
-  } else {
-    books.value = [...books.value, ...fetchedBooks]
-  }
-
-  // Wait for all books and covers to be displayed - then render everything - then check if there are scrollbars.
-  // Then check if we need to fetch more books to fill the page.
-  await nextTick()
-  let hasScrollBars =
-    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight
-  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH
-  if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
-    await loadBooks(start_from + BOOKS_TO_PREFETCH, true, true)
-  }
-
+  const fetchedBooks = await preloadBooks(filter, start_from, initialFetch)
   booksLoading.value = false
 
   // Fetch covers as data urls
