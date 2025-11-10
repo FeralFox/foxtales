@@ -314,7 +314,13 @@ async function toggleIsRead() {
     await saveToBookDb('books', toRaw(book), book!.uuid)
   }
 
-  syncedUpdate('update-read-status', book!.uuid, { fxtl_is_read: new_value })
+  setTimeout(
+    () =>
+      syncedUpdate('update-read-status', book!.uuid, {
+        fxtl_is_read: new_value,
+      }),
+    500,
+  )
 }
 
 function confirmRemoveBook(identifier: string) {
