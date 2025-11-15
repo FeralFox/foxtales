@@ -5,7 +5,11 @@ stages:
 
 build_image:
   stage: build_image
-  image: jdrouet/docker-with-buildx:stable
+  image: docker:latest
+  before_script:
+    - docker version
+    - docker info
+    - docker buildx create --driver=docker-container --name=buildkit-builder --use
   variables:
     DOCKER_HOST: tcp://docker:2375/
     DOCKER_DRIVER: overlay2
