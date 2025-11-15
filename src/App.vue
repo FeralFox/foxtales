@@ -20,6 +20,8 @@ import '/public/foliate/fflate.js'
 import '/public/foliate/mobi.js'
 import '/public/foliate/pdf.js'
 import '/public/foliate/zip.js'
+import '/public/foliate/pdfjs/pdf.mjs'
+import '/public/foliate/pdfjs/pdf.worker.mjs'
 
 const offlineRoutes = ['/', '/book', '/register', '/login']
 
