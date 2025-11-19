@@ -104,8 +104,11 @@ type BookEntry = {
   fxtl_progress_update: string
   fxtl_progress: number
   fxtl_owner: string
+  fxtl_is_read: string
   [k: string]: any
 }
+
+const LIST_SORT_UNREAD_BOOKS_FIRST = true
 
 const offlineBooks = ref<BookEntry[]>([])
 
@@ -113,8 +116,16 @@ async function loadOfflineBooks() {
   try {
     const bks = (await getValuesFromIndexedDB('books', 'books')) as BookEntry[]
     bks.sort((a, b) => {
-      const al = Date.parse(a?.fxtl_progress_update) ?? 0
-      const bl = Date.parse(b?.fxtl_progress_update) ?? 0
+      let al = Date.parse(a?.fxtl_progress_update) ?? 0
+      let bl = Date.parse(b?.fxtl_progress_update) ?? 0
+      if (LIST_SORT_UNREAD_BOOKS_FIRST) {
+        if (a.fxtl_is_read) {
+          al -= 100000000000
+        }
+        if (b.fxtl_is_read) {
+          bl -= 100000000000
+        }
+      }
       return bl - al
     })
     const own_books = []
