@@ -22,6 +22,8 @@ import './modules/utils/foliatejs/vendor/fflate.js'
 import './modules/utils/foliatejs/vendor/zip.js'
 import './modules/utils/foliatejs/vendor/pdfjs/pdf.mjs'
 import './modules/utils/foliatejs/vendor/pdfjs/pdf.worker.mjs'
+import './modules/utils/foliatejs/vendor/pdfjs/text_layer_builder.css'
+import './modules/utils/foliatejs/vendor/pdfjs/annotation_layer_builder.css'
 
 const offlineRoutes = ['/', '/book', '/register', '/login']
 
