@@ -454,14 +454,13 @@ async function preloadBooks(
   initialFetch: boolean | undefined,
 ) {
   localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
+  let filterUrl = ''
   if (filter) {
-    filter = `&search_query=${encodeURIComponent(filter)}`
-  } else {
-    filter = ''
+    filterUrl = `&search_query=${encodeURIComponent(filter)}`
   }
   const fetchedBooks = await fetchAsync(
     `${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}
-    &start_from=${start_from}${filter}`,
+    &start_from=${start_from}${filterUrl}`,
   )
   // Immediately display all books as soon as they are available.
   if (start_from === 0) {
