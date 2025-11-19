@@ -192,6 +192,15 @@ class CalibreDb:
         return subprocess.check_output(
             ["calibredb", "add_format", "--as-extra-data-file", str(book_id), the_file, *self._get_auth()])
 
+    def get_datafile(self, book_id: int, name: str) -> bytes:
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            the_dir = pathlib.Path(tmpdir_str)
+            subprocess.check_output(["calibredb", "export", "--dont-update-metadata", "--dont-write-opf", "--formats", name, "--dont-save-cover", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
+            try:
+                return next(the_dir.rglob(f"*{name}")).read_bytes()
+            except StopIteration:
+                return b""
+
     def retrieve_book(self, book_id: int, format: str) -> tuple[str, bytes]:
         """Download the book. Returns a tuple of mimetype and byte data."""
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -200,7 +209,7 @@ class CalibreDb:
             the_book = next(the_dir.glob("*"))
             return mimetypes.guess_type(the_book)[0], the_book.read_bytes()
 
-    @functools.lru_cache(maxsize=500)
+    @functools.lru_cache(maxsize=100)
     def retrieve_cover(self, book_id: int) -> tuple[str, bytes]:
         """Retrieve the cover of the book. Returns a tuple of mimetype and byte data."""
         with tempfile.TemporaryDirectory() as tmpdir_str:
