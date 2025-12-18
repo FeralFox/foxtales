@@ -163,6 +163,7 @@ import IconRemove from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 import IconBookRead from '../public/icons/eye-svgrepo-com.svg'
 import { syncedUpdate } from './sync'
+import { BookMeta } from './interfaces'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
@@ -187,13 +188,6 @@ async function fetchAsync(url: string) {
     throw 'Authorization error - forward to login page.'
   }
   return await response.json()
-}
-
-interface BookMeta {
-  id: string
-  uuid: string
-  title: string
-  fxtl_is_read: boolean
 }
 
 const books = ref<BookMeta[]>([])

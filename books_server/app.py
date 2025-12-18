@@ -212,6 +212,7 @@ class BookMetaData(BaseModel):
     fxtl_progress: Optional[float] = None
     fxtl_progress_update: Optional[str] = None
     fxtl_is_read: Optional[bool] = None
+    fxtl_tags: Optional[list[str]] = None
 
 
 @app.post("/set_book_metadata")

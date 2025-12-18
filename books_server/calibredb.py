@@ -143,6 +143,8 @@ class CalibreDb:
             self._add_custom_column("fxtl_progress_update", "Last Reading Progress Update", "datetime", False)
         if not "fxtl_is_read" in columns.values():
             self._add_custom_column("fxtl_is_read", "Is Read", "bool", False)
+        if not "fxtl_tags" in columns.values():
+            self._add_custom_column("fxtl_tags", "Tags", "text", True)
 
     def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
         logging.info(f"Add custom column {name}")
@@ -197,6 +199,7 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_progress", "0")
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
         self.set_custom_value(book_id, "fxtl_is_read", "False")
+        self.set_custom_value(book_id, "fxtl_tags", "")
         return book_id
 
     def remove_book(self, book_id: int):

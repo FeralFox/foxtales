@@ -8,6 +8,9 @@
     <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"
       ><LibraryIcon class="logo" />Library</a
     >
+    <a :class="props.active === 'wishlist' ? 'is-active' : ''" href="#/wishlist"
+      ><FavoritesIcon class="logo" />Wishlist</a
+    >
     <div style="flex-grow: 1" />
     <button v-if="isAuthenticated" class="logout-btn" @click="logout">
       Logout
@@ -74,6 +77,7 @@ import { computed } from 'vue'
 import Logo from '../public/icons/logo_dark.svg'
 import BookStackIcon from '../public/icons/books-stack-svgrepo-com.svg'
 import LibraryIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
+import FavoritesIcon from '../public/icons/favorites-svgrepo-com.svg'
 
 const props = defineProps(['active'])
 
