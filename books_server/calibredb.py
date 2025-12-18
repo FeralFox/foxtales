@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 import functools
-import io
 import json
 import logging
 import mimetypes
@@ -9,7 +8,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
-from typing import Optional, Union
+from typing import Optional
 
 import PIL.Image
 
@@ -99,10 +98,18 @@ class FxtlData:
         file.write_text(json.dumps(dataclasses.asdict(self)))
 
 
+@dataclasses.dataclass
+class CachedBookMetadata:
+    """Metadata that will (most likely) not change - used as cache."""
+    book_id: int
+    local_path: pathlib.Path
+
+
 class CalibreDb:
     def __init__(self, host: pathlib.Path):
         self._path = host
         self._user = host.name
+        self._book_cache = {}
         self.upgrade_library()
 
     @functools.lru_cache(maxsize=1000)
@@ -162,8 +169,22 @@ class CalibreDb:
         result = subprocess.check_output(['calibredb', 'list', *filter_options, '--fields', fields, '--for-machine', *self._get_auth()])
         results = []
         for res in json.loads(result):
-            results.append(CalibreListData.from_dict(res))
+            data = CalibreListData.from_dict(res)
+            self._book_cache[data.uuid] = CachedBookMetadata(
+                data.id,
+                pathlib.Path(data.cover).parent
+            )
+            results.append(data)
         return results
+
+    def get_book_path(self, book_uuid: str) -> pathlib.Path:
+        try:
+            local_path = self._book_cache[book_uuid].local_path
+            assert local_path.exists()
+            return local_path
+        except (KeyError, AssertionError):
+            self.list_books(f"uuid:{book_uuid}")
+            return self._book_cache[book_uuid].local_path
 
     def add_book(self, book: pathlib.Path, users: Optional[list[str]] = None) -> int:
         """Add a book to Calibre library."""
@@ -210,17 +231,21 @@ class CalibreDb:
             return mimetypes.guess_type(the_book)[0], the_book.read_bytes()
 
     @functools.lru_cache(maxsize=100)
-    def retrieve_cover(self, book_id: int) -> tuple[str, bytes]:
+    def retrieve_cover(self, book_uuid: str) -> tuple[str, bytes]:
         """Retrieve the cover of the book. Returns a tuple of mimetype and byte data."""
+        local_path = self.get_book_path(book_uuid)
+        preview = local_path / "data" / "cover.min.jpg"
+        if preview.exists():
+            b = preview.read_bytes()
+            return "image/jpeg", b
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
             subprocess.check_output(["calibredb", "export", "--dont-save-extra-files", "--dont-update-metadata", "--dont-write-opf", "--formats", "jpg,jpeg,png,gif", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
             the_book = next(the_dir.glob("*"))
             image = PIL.Image.open(the_book)
-            buffer = io.BytesIO()
             image.thumbnail((400, 400))
-            image.save(buffer, "jpeg", quality=80)
-            return "image/jpeg", buffer.getvalue()
+            image.save(preview, "jpeg", quality=80)
+            return "image/jpeg", preview.read_bytes()
 
     def get_book_metadata(self, book_id: int) -> FullBookMetadata:
         data = self.list_books(f"id:{book_id}")[0]

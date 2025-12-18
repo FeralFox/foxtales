@@ -1,11 +1,9 @@
 import base64
 import dataclasses
-import json
 import os
 import pathlib
 import subprocess
 import tempfile
-import threading
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
@@ -201,8 +199,7 @@ async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_c
 @app.get("/get_book_cover")
 async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, data_url: bool = False):
     lib = current_user.library
-    book_id = lib.get_book_id_by_uuid(book_uuid)
-    mtype, data = lib.retrieve_cover(book_id)
+    mtype, data = lib.retrieve_cover(book_uuid)
     if data_url:
         b64 = base64.b64encode(data).decode("utf-8")
         return f"data:{mtype};base64,{b64}"
