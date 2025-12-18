@@ -8,9 +8,9 @@
     <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"
       ><LibraryIcon class="logo" />Library</a
     >
-    <a :class="props.active === 'wishlist' ? 'is-active' : ''" href="#/wishlist"
-      ><FavoritesIcon class="logo" />Wishlist</a
-    >
+    <!--    <a :class="props.active === 'wishlist' ? 'is-active' : ''" href="#/wishlist"-->
+    <!--      ><FavoritesIcon class="logo" />Wishlist</a-->
+    <!--    >-->
     <div style="flex-grow: 1" />
     <button v-if="isAuthenticated" class="logout-btn" @click="logout">
       Logout

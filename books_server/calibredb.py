@@ -109,7 +109,7 @@ class CalibreDb:
     def __init__(self, host: pathlib.Path):
         self._path = host
         self._user = host.name
-        self._book_cache = {}
+        self._book_cache: dict[str, CachedBookMetadata] = {}
         self.upgrade_library()
 
     @functools.lru_cache(maxsize=1000)
@@ -179,6 +179,13 @@ class CalibreDb:
             results.append(data)
         return results
 
+    def get_book_id(self, book_uuid: str) -> int:
+        try:
+            return self._book_cache[book_uuid].book_id
+        except (KeyError, AssertionError):
+            self.list_books(f"uuid:{book_uuid}")
+            return self._book_cache[book_uuid].book_id
+
     def get_book_path(self, book_uuid: str) -> pathlib.Path:
         try:
             local_path = self._book_cache[book_uuid].local_path
@@ -243,9 +250,11 @@ class CalibreDb:
             return "image/jpeg", b
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
+            book_id = self.get_book_id(book_uuid)
             subprocess.check_output(["calibredb", "export", "--dont-save-extra-files", "--dont-update-metadata", "--dont-write-opf", "--formats", "jpg,jpeg,png,gif", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
             the_book = next(the_dir.glob("*"))
             image = PIL.Image.open(the_book)
+            preview.parent.mkdir(exist_ok=True)
             image.thumbnail((400, 400))
             image.save(preview, "jpeg", quality=80)
             return "image/jpeg", preview.read_bytes()
