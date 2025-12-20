@@ -20,6 +20,9 @@
         {{ truncated_title.episode }}
       </div>
     </div>
+    <div class="authors-label">
+      {{ book!.authors.toString().replace('Unknown', '') }}
+    </div>
   </div>
 </template>
 
@@ -67,11 +70,18 @@ const truncated_title = computed(() => {
 }
 </style>
 <style scoped>
+.authors-label {
+  color: #0007;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-left: 0.2em;
+}
 .book-cover {
   position: relative;
   background-size: cover;
   width: 100%;
-  height: calc(100% - 2rem);
+  height: calc(100% - 3.1rem);
   border: 1px solid var(--book-border);
   border-radius: 5px;
   margin-bottom: 5px;

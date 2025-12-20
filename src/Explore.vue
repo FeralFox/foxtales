@@ -1,5 +1,18 @@
 <template>
   <Navigation active="explore" />
+  <ContextMenu
+    v-model="displayBookContextMenu"
+    :x="contextMenuX"
+    :y="contextMenuY"
+    :title="displayBookContextMenu?.title"
+  >
+    <ContextMenuItem
+      @click="addToWishlist(displayBookContextMenu!)"
+      :icon="IconAddToWishlist"
+    >
+      Add to Wishlist
+    </ContextMenuItem>
+  </ContextMenu>
   <div style="width: 100%; display: flex; flex-direction: column">
     <div
       style="
@@ -20,7 +33,14 @@
         <IconSearch />
       </div>
     </div>
-    <div style="overflow: hidden; position: relative; display: flex">
+    <div
+      style="
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        min-height: 15rem;
+      "
+    >
       <div style="overflow: auto" ref="book-container">
         <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
           <div
@@ -52,9 +72,20 @@ import { authHeaders, URL } from './constants'
 import ContextMenu from './components/ContextMenu.vue'
 import ContextMenuItem from './components/ContextMenuItem.vue'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
-import { BookMeta, SearchedBook } from './interfaces'
+import { SearchedBook } from './interfaces'
+import IconAddToWishlist from '../public/icons/add-to-wishlist-svgrepo-com.svg'
 
 const searchField = useTemplateRef('search-field')
+
+async function addToWishlist(book: SearchedBook) {
+  displayBookContextMenu.value = null
+  const response = await fetch(`${URL}/wishlist_book`, {
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    method: 'POST',
+    body: JSON.stringify(book),
+  })
+  console.log(response.json())
+}
 
 async function fetchAsync(url: string) {
   const response = await fetch(url, { headers: authHeaders() })
@@ -68,7 +99,7 @@ async function fetchAsync(url: string) {
 const books = ref<SearchedBook[]>([])
 const localBooks = ref<string[]>([])
 
-const displayBookContextMenu = ref<BookMeta | null>(null)
+const displayBookContextMenu = ref<SearchedBook | null>(null)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 

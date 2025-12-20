@@ -33,7 +33,14 @@
         <IconSearch />
       </div>
     </div>
-    <div style="overflow: hidden; position: relative; display: flex">
+    <div
+      style="
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        min-height: 15rem;
+      "
+    >
       <div style="overflow: auto" @scroll="onScroll" ref="book-container">
         <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
           <div
@@ -59,8 +66,8 @@
   </div>
 
   <div v-if="showDeleteModal" class="modal" @click.stop>
-    <div style="font-weight: 600">Remove from Library</div>
-    <div>Are you sure you want to remove this book from your library?</div>
+    <div style="font-weight: 600">Remove from Wishlist</div>
+    <div>Are you sure you want to remove this book from your wishlist?</div>
     <div
       style="
         display: flex;

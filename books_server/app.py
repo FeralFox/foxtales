@@ -21,7 +21,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, CalibreListData, FullBookMetadata, FxtlData, UserData
+from calibredb import CalibreDb, CalibreListData, FullBookMetadata, FxtlData, UserData, SearchedBook
 from lib import is_correct_password, hash_new_password
 
 BASE_PATH = pathlib.Path(__file__).parent.parent
@@ -167,7 +167,13 @@ async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
         the_dir = pathlib.Path(tmpdir_str)
         the_file = the_dir / file.filename
         the_file.write_bytes(await file.read())
-        book_id = current_user.library.add_book(the_file)
+        book_id = current_user.library.add_book_from_file(the_file)
+    return AddBookStatus(book_id=book_id, success=True)
+
+
+@app.post("/wishlist_book")
+async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: SearchedBook) -> AddBookStatus:
+    book_id = current_user.library.wishlist_book(data)
     return AddBookStatus(book_id=book_id, success=True)
 
 
@@ -239,18 +245,6 @@ async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
 
 
 @dataclasses.dataclass
-class SearchedBook:
-    id: str
-    title: str
-    subtitle: str
-    pubdate: str
-    cover_url: str
-    description: str
-    authors: list[str]
-    isbn: str
-
-
-@dataclasses.dataclass
 class SearchedBookResponse:
     result: list[SearchedBook]
 
@@ -258,6 +252,7 @@ class SearchedBookResponse:
 @app.get("/explore_books")
 async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
     return _search_book(search_query)
+
 
 @functools.lru_cache(maxsize=10)
 def _search_book(search_query: str) -> SearchedBookResponse:
@@ -271,7 +266,7 @@ def _search_book(search_query: str) -> SearchedBookResponse:
             pubdate=result.published_date,
             cover_url=result.large_thumbnail or result.small_thumbnail,
             description=result.description,
-            authors=result.authors,
+            authors=", ".join(result.authors or []),  # noqa
             isbn=result.ISBN_13 or result.ISBN_10,
         ))
     return SearchedBookResponse(results)

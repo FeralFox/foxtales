@@ -436,7 +436,11 @@ async function downloadBook(uuid: string) {
 
 function applyFilter() {
   const searchValue = searchField.value!.value
-  loadBooks(0, true, true, searchValue)
+  if (searchValue) {
+    loadBooks(0, true, true, `${searchValue} and not #fxtl_tags:"=wishlist"`)
+  } else {
+    loadBooks(0, true, true, `not #fxtl_tags:"=wishlist"`)
+  }
 }
 
 const BOOKS_TO_PREFETCH = 10
@@ -531,7 +535,7 @@ function onScroll() {
 }
 
 onMounted(() => {
-  loadBooks(0, true, true)
+  loadBooks(0, true, true, 'not #fxtl_tags:"=wishlist"')
 })
 </script>
 

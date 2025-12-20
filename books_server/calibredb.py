@@ -1,3 +1,4 @@
+import base64
 import dataclasses
 import datetime
 import functools
@@ -11,6 +12,7 @@ import tempfile
 from typing import Optional
 
 import PIL.Image
+import requests
 
 LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
 
@@ -71,6 +73,18 @@ class CalibreListData:
 @dataclasses.dataclass
 class FullBookMetadata(CalibreListData):
     pass
+
+
+@dataclasses.dataclass
+class SearchedBook:
+    id: str
+    title: str
+    subtitle: str
+    pubdate: str
+    cover_url: str
+    description: str
+    authors: str
+    isbn: str
 
 
 @dataclasses.dataclass
@@ -151,7 +165,8 @@ class CalibreDb:
         is_multiple = []
         if is_multiple:
             is_multiple = ["--is-multiple"]
-        subprocess.check_output(["calibredb", "add_custom_column", *is_multiple, name, display_name, datatype, *self._get_auth()])
+        subprocess.check_output(
+            ["calibredb", "add_custom_column", *is_multiple, name, display_name, datatype, *self._get_auth()])
 
     def get_custom_columns(self) -> dict[int, str]:
         result = subprocess.check_output(['calibredb', 'custom_columns', *self._get_auth()])
@@ -168,7 +183,8 @@ class CalibreDb:
         filter_options = []
         if filter_query:
             filter_options = ["--search", filter_query]
-        result = subprocess.check_output(['calibredb', 'list', *filter_options, '--fields', fields, '--for-machine', *self._get_auth()])
+        result = subprocess.check_output(
+            ['calibredb', 'list', *filter_options, '--fields', fields, '--for-machine', *self._get_auth()])
         results = []
         for res in json.loads(result):
             data = CalibreListData.from_dict(res)
@@ -195,9 +211,9 @@ class CalibreDb:
             self.list_books(f"uuid:{book_uuid}")
             return self._book_cache[book_uuid].local_path
 
-    def add_book(self, book: pathlib.Path, users: Optional[list[str]] = None) -> int:
+    def add_book_from_file(self, book: pathlib.Path, users: Optional[list[str]] = None) -> int:
         """Add a book to Calibre library."""
-        result = subprocess.check_output(['calibredb', "add",  book.as_posix(), *self._get_auth()])
+        result = subprocess.check_output(['calibredb', "add", book.as_posix(), *self._get_auth()])
         try:
             book_id = int(re.findall(b"\d+", result)[0])
         except Exception as error:
@@ -209,9 +225,28 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_tags", "")
         return book_id
 
+    def add_book(self,
+                 title: str,
+                 authors: str,
+                 isbn: str,
+                 cover_path: pathlib.Path) -> int:
+        result = subprocess.check_output(
+            ['calibredb', "add", "--empty", "--isbn", isbn, "--title", title, "--authors", authors, "--cover",
+             cover_path.absolute().as_posix(), *self._get_auth()])
+        try:
+            book_id = int(re.findall(b"\d+", result)[0])
+        except Exception as error:
+            raise RuntimeError(f"Unexpected response when calling 'calibredb add': {result}") from error
+        self.set_custom_value(book_id, "fxtl_owner", self._user)
+        self.set_custom_value(book_id, "fxtl_progress", "0")
+        self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
+        self.set_custom_value(book_id, "fxtl_is_read", "False")
+        self.set_custom_value(book_id, "fxtl_tags", "wishlist")
+        return book_id
+
     def remove_book(self, book_id: int):
         """Add a book to Calibre library."""
-        result = subprocess.check_output(['calibredb', "remove",  str(book_id), *self._get_auth()])
+        result = subprocess.check_output(['calibredb', "remove", str(book_id), *self._get_auth()])
 
     def set_custom_value(self, book_id: int, key: str, value: str) -> bytes:
         """Set custom value for a book."""
@@ -226,7 +261,10 @@ class CalibreDb:
     def get_datafile(self, book_id: int, name: str) -> bytes:
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
-            subprocess.check_output(["calibredb", "export", "--dont-update-metadata", "--dont-write-opf", "--formats", name, "--dont-save-cover", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
+            subprocess.check_output(
+                ["calibredb", "export", "--dont-update-metadata", "--dont-write-opf", "--formats", name,
+                 "--dont-save-cover", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id),
+                 *self._get_auth()])
             try:
                 return next(the_dir.rglob(f"*{name}")).read_bytes()
             except StopIteration:
@@ -236,7 +274,10 @@ class CalibreDb:
         """Download the book. Returns a tuple of mimetype and byte data."""
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
-            result = subprocess.check_output(["calibredb", "export", "--dont-update-metadata", "--dont-save-extra-files", "--dont-write-opf", "--dont-save-cover", "--formats", format, "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
+            result = subprocess.check_output(
+                ["calibredb", "export", "--dont-update-metadata", "--dont-save-extra-files", "--dont-write-opf",
+                 "--dont-save-cover", "--formats", format, "--template", "{id}", "--to-dir", the_dir.as_posix(),
+                 str(book_id), *self._get_auth()])
             the_book = next(the_dir.glob("*"))
             return mimetypes.guess_type(the_book)[0], the_book.read_bytes()
 
@@ -251,7 +292,10 @@ class CalibreDb:
         with tempfile.TemporaryDirectory() as tmpdir_str:
             the_dir = pathlib.Path(tmpdir_str)
             book_id = self.get_book_id(book_uuid)
-            subprocess.check_output(["calibredb", "export", "--dont-save-extra-files", "--dont-update-metadata", "--dont-write-opf", "--formats", "jpg,jpeg,png,gif", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id), *self._get_auth()])
+            subprocess.check_output(
+                ["calibredb", "export", "--dont-save-extra-files", "--dont-update-metadata", "--dont-write-opf",
+                 "--formats", "jpg,jpeg,png,gif", "--template", "{id}", "--to-dir", the_dir.as_posix(), str(book_id),
+                 *self._get_auth()])
             the_book = next(the_dir.glob("*"))
             image = PIL.Image.open(the_book)
             preview.parent.mkdir(exist_ok=True)
@@ -262,3 +306,17 @@ class CalibreDb:
     def get_book_metadata(self, book_id: int) -> FullBookMetadata:
         data = self.list_books(f"id:{book_id}")[0]
         return FullBookMetadata(**data.__dict__)
+
+    def wishlist_book(self, bookData: SearchedBook) -> int:
+        print(bookData)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            cover_path = None
+            if bookData.cover_url:
+                the_dir = pathlib.Path(tmpdir_str)
+                cover_path = the_dir / "cover.png"
+                cover_path.write_bytes(requests.get(bookData.cover_url).content)
+            book_id = self.add_book(bookData.title,
+                                      bookData.authors,
+                                      bookData.isbn,
+                                      cover_path)
+        return book_id
