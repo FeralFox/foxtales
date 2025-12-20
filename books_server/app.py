@@ -7,6 +7,8 @@ import tempfile
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
+import functools
+import google_books_api_wrapper.api
 import jwt
 import fastapi
 from fastapi import UploadFile, Depends, HTTPException
@@ -189,6 +191,7 @@ async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current
         book_list = book_list[:max_items]
     return book_list
 
+
 @app.get("/get_book_metadata")
 async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> FullBookMetadata:
     lib = current_user.library
@@ -233,6 +236,45 @@ async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
     book_id = lib.get_book_id_by_uuid(book_uuid)
     mtype, data = current_user.library.retrieve_book(book_id, format)
     return Response(content=data, media_type=mtype)
+
+
+@dataclasses.dataclass
+class SearchedBook:
+    id: str
+    title: str
+    subtitle: str
+    pubdate: str
+    cover_url: str
+    description: str
+    authors: list[str]
+    isbn: str
+
+
+@dataclasses.dataclass
+class SearchedBookResponse:
+    result: list[SearchedBook]
+
+
+@app.get("/explore_books")
+async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
+    return _search_book(search_query)
+
+@functools.lru_cache(maxsize=10)
+def _search_book(search_query: str) -> SearchedBookResponse:
+    x = google_books_api_wrapper.api.GoogleBooksAPI().search_book(search_query)
+    results = []
+    for result in x:
+        results.append(SearchedBook(
+            id=result.id,
+            title=result.title,
+            subtitle=result.subtitle,
+            pubdate=result.published_date,
+            cover_url=result.large_thumbnail or result.small_thumbnail,
+            description=result.description,
+            authors=result.authors,
+            isbn=result.ISBN_13 or result.ISBN_10,
+        ))
+    return SearchedBookResponse(results)
 
 # Serve index.html for all other routes (SPA support)
 @app.get("/{path:path}", include_in_schema=False)

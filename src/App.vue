@@ -6,6 +6,7 @@ import OfflineLibrary from './OfflineLibrary.vue'
 import Login from './Login.vue'
 import Register from './Register.vue'
 import Wishlist from './Wishlist.vue'
+import Explore from './Explore.vue'
 
 // Import all foliatejs assets for offline use.
 import './modules/utils/foliatejs/fixed-layout.js'
@@ -34,6 +35,7 @@ const routes: Record<string, any> = {
   '/login': Login,
   '/register': Register,
   '/wishlist': Wishlist,
+  '/explore': Explore,
   '/book': Book,
 }
 

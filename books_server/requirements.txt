@@ -3,3 +3,4 @@ fastapi
 uvicorn
 Pillow
 pyjwt
+google-books-api-wrapper
