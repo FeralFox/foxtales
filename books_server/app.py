@@ -2,16 +2,21 @@ import base64
 import dataclasses
 import os
 import pathlib
+import re
 import subprocess
 import tempfile
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
 import functools
+
+import bs4
 import google_books_api_wrapper.api
 import jwt
 import fastapi
+import requests
 import time
+import uuid
 from fastapi import UploadFile, Depends, HTTPException
 import uvicorn
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -253,11 +258,71 @@ class SearchedBookResponse:
 
 @app.get("/explore_books")
 async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
-    return _search_book(search_query)
+    books = _search_book_annas_archive(search_query)
+    primary_results = []
+    secondary_results = []
+    for result in books:
+        words = [*result.title.split(" "),
+                 *(result.subtitle or "").split(" "),
+                 *result.authors.split(" ")]
+        lc_query = {itm.lower().strip("\".,'-+") for itm in search_query.split(" ")}
+        lc_words = {wrd.lower().strip("\".,'-+") for wrd in words}
+        if search_query not in (result.isbn or "") and not (lc_query.intersection(lc_words)):
+            continue
+        if result.cover_url:
+            primary_results.append(result)
+        else:
+            secondary_results.append(result)
+    return SearchedBookResponse(result=[*primary_results, *secondary_results])
 
 
 @functools.lru_cache(maxsize=10)
-def _search_book(search_query: str) -> SearchedBookResponse:
+def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
+    query = search_query.replace(" ", "+")
+    response = requests.get(f"https://annas-archive.org/search?index=&page=1&sort=&display=&q={query}")
+    b = bs4.BeautifulSoup(response.content)
+    results = [c for c in b.findAll(class_="js-aarecord-list-outer")[0].children if c.name == "div"]
+
+    all_results = {}
+    for result in results:
+        try:
+            image, info = [c for c in result.children if c.name in ["a", "div"]]
+        except ValueError:
+            continue
+        image_url = image.find("img").attrs["src"]
+
+        general_info, description_container, *_ = [c for c in info.children if c.name == "div"]
+        general_data = [c for c in general_info.children if c.name == "a"]
+        author = ""
+        publisher = ""
+        date = ""
+        title = general_data[0].text.strip()
+        author_identifier = general_info.find(class_="icon-[mdi--user-edit]")
+        if author_identifier:
+            author = author_identifier.parent.text.strip()
+        publisher_identifier = general_info.find(class_="icon-[mdi--company]")
+        if publisher_identifier:
+            publisher = publisher_identifier.parent.text.strip()
+            try:
+                date = re.findall("\d{4}", publisher)[0]
+            except IndexError:
+                date = ""
+        description = description_container.text.replace("Read more...", "").strip()
+        all_results[f"{title},{author}"] = SearchedBook(
+            id=uuid.uuid4().hex,
+            subtitle="",
+            title=title,
+            pubdate=date,
+            description=description,
+            authors=author,
+            isbn="",
+            cover_url=image_url
+        )
+    return list(all_results.values())
+
+
+@functools.lru_cache(maxsize=10)
+def _search_book(search_query: str) -> list[SearchedBook]:
     for _ in range(5):
         try:
             x = google_books_api_wrapper.api.GoogleBooksAPI().search_book(search_query)
@@ -269,13 +334,6 @@ def _search_book(search_query: str) -> SearchedBookResponse:
     results = []
     for result in x:
         authors = ", ".join(result.authors or [])
-        words = [*result.title.split(" "),
-                 *(result.subtitle or "").split(" "),
-                 *authors.split(" ")]
-        lc_query = {itm.lower().strip("\".,'-+") for itm in search_query.split(" ")}
-        lc_words = {wrd.lower().strip("\".,'-+") for wrd in words}
-        if search_query not in (result.ISBN_10 or "") and not (lc_query.intersection(lc_words)):
-            continue
         results.append(SearchedBook(
             id=result.id,
             title=result.title,
@@ -283,13 +341,13 @@ def _search_book(search_query: str) -> SearchedBookResponse:
             pubdate=result.published_date,
             cover_url=result.large_thumbnail or result.small_thumbnail,
             description=result.description,
-            authors=authors,  # noqa
+            authors=authors,
             isbn=result.ISBN_13 or result.ISBN_10,
         ))
     if not results and not '"' in search_query:
         # Seems Google is not good with searching... "exit black" is found, without " it isn't.
         return _search_book(f'"{search_query}"')
-    return SearchedBookResponse(results)
+    return results
 
 # Serve index.html for all other routes (SPA support)
 @app.get("/{path:path}", include_in_schema=False)

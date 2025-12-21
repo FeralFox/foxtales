@@ -27,7 +27,7 @@
         v-on:keyup.enter="applyFilter"
         class="search-field"
         type="text"
-        placeholder="Filter..."
+        placeholder="search title, author or ISBN..."
       />
       <div @click="applyFilter" class="search-field-btn">
         <IconSearch />
