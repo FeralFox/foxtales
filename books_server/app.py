@@ -11,9 +11,11 @@ import functools
 import google_books_api_wrapper.api
 import jwt
 import fastapi
+import time
 from fastapi import UploadFile, Depends, HTTPException
 import uvicorn
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from google_books_api_wrapper.exceptions import GoogleBooksAPIException
 from jwt import InvalidTokenError
 from pydantic import BaseModel
 from starlette import status
@@ -256,9 +258,24 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
 
 @functools.lru_cache(maxsize=10)
 def _search_book(search_query: str) -> SearchedBookResponse:
-    x = google_books_api_wrapper.api.GoogleBooksAPI().search_book(search_query)
+    for _ in range(5):
+        try:
+            x = google_books_api_wrapper.api.GoogleBooksAPI().search_book(search_query)
+            break
+        except GoogleBooksAPIException as exc:
+            time.sleep(1)
+    else:
+        raise exc
     results = []
     for result in x:
+        authors = ", ".join(result.authors or [])
+        words = [*result.title.split(" "),
+                 *(result.subtitle or "").split(" "),
+                 *authors.split(" ")]
+        lc_query = {itm.lower().strip("\".,'-+") for itm in search_query.split(" ")}
+        lc_words = {wrd.lower().strip("\".,'-+") for wrd in words}
+        if search_query not in (result.ISBN_10 or "") and not (lc_query.intersection(lc_words)):
+            continue
         results.append(SearchedBook(
             id=result.id,
             title=result.title,
@@ -266,9 +283,12 @@ def _search_book(search_query: str) -> SearchedBookResponse:
             pubdate=result.published_date,
             cover_url=result.large_thumbnail or result.small_thumbnail,
             description=result.description,
-            authors=", ".join(result.authors or []),  # noqa
+            authors=authors,  # noqa
             isbn=result.ISBN_13 or result.ISBN_10,
         ))
+    if not results and not '"' in search_query:
+        # Seems Google is not good with searching... "exit black" is found, without " it isn't.
+        return _search_book(f'"{search_query}"')
     return SearchedBookResponse(results)
 
 # Serve index.html for all other routes (SPA support)
