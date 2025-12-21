@@ -269,6 +269,8 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
         lc_words = {wrd.lower().strip("\".,'-+") for wrd in words}
         if search_query not in (result.isbn or "") and not (lc_query.intersection(lc_words)):
             continue
+        if result.title.rsplit(".", 1)[-1] in ["com", "zip", "rar", "pdf"]:
+            continue
         if result.cover_url:
             primary_results.append(result)
         else:
