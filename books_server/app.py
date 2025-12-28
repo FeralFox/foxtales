@@ -148,7 +148,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
     except subprocess.CalledProcessError:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token = create_access_token(
-        data={"sub": username}, expires_delta=timedelta(minutes=60)
+        data={"sub": username}, expires_delta=timedelta(days=30)
     )
     active_users[username] = ActiveUserData(username=username, library=library)
     return Token(access_token=access_token, token_type="bearer")
