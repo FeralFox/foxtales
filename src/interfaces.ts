@@ -12,6 +12,6 @@ export interface SearchedBook {
   pubdate: string
   cover_url: string
   description: string
-  authors: string[]
+  authors: string
   isbn: string
 }

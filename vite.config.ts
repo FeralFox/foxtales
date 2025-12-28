@@ -22,7 +22,7 @@ export default defineConfig({
       ],
       workbox: {
         maximumFileSizeToCacheInBytes: 3000000,
-        globPatterns: ['**/*.{js,css,mjs}'],
+        globPatterns: ['**/*.{js,css,mjs,svg}'],
       },
       manifest: {
         name: 'Foxtales Ebook Library',

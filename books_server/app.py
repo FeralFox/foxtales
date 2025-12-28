@@ -259,8 +259,8 @@ class SearchedBookResponse:
 @app.get("/explore_books")
 async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
     books = _search_book_annas_archive(search_query)
-    primary_results = []
-    secondary_results = []
+    primary_results: list[SearchedBook] = []
+    secondary_results: list[SearchedBook] = []
     for result in books:
         words = [*result.title.split(" "),
                  *(result.subtitle or "").split(" "),
@@ -275,6 +275,7 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
             primary_results.append(result)
         else:
             secondary_results.append(result)
+    primary_results.sort(key=lambda book: len(book.description), reverse=True)
     return SearchedBookResponse(result=[*primary_results, *secondary_results])
 
 
@@ -315,7 +316,7 @@ def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
             subtitle="",
             title=title,
             pubdate=date,
-            description=description,
+            description=description.replace("Read more…", ""),
             authors=author,
             isbn="",
             cover_url=image_url

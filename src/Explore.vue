@@ -8,6 +8,12 @@
   >
     <ContextMenuItem
       @click="addToWishlist(displayBookContextMenu!)"
+      :icon="IconShowDetails"
+    >
+      Details
+    </ContextMenuItem>
+    <ContextMenuItem
+      @click="addToWishlist(displayBookContextMenu!)"
       :icon="IconAddToWishlist"
     >
       Add to Wishlist
@@ -47,6 +53,7 @@
             v-for="book in books"
             :key="book.id"
             @contextmenu.prevent="openContextMenu($event, book)"
+            @click="openDetails(book)"
             style="cursor: pointer; position: relative"
           >
             <BookCoverThumbnail
@@ -58,6 +65,51 @@
       </div>
       <div v-if="booksLoading" class="libraries-loading-spinner">
         <div class="spinner"></div>
+      </div>
+    </div>
+    <!-- Book details sidebar / mobile overlay -->
+    <div v-if="selectedBook" class="details-overlay" @click.self="closeDetails">
+      <div class="details-panel">
+        <a class="close-btn" @click="closeDetails" aria-label="Close"> × </a>
+        <div class="details-header">
+          <div
+            class="cover"
+            :style="{ backgroundImage: `url(${selectedBook.cover_url})` }"
+          ></div>
+          <div class="meta">
+            <h2 class="title">{{ selectedBook.title }}</h2>
+            <div v-if="selectedBook.subtitle" class="subtitle">
+              {{ selectedBook.subtitle }}
+            </div>
+            <div class="authors" v-if="selectedBook.authors?.length">
+              {{ selectedBook.authors }}
+            </div>
+            <div class="pub">{{ selectedBook.pubdate }}</div>
+            <div class="isbn" v-if="selectedBook.isbn">
+              ISBN: {{ selectedBook.isbn }}
+            </div>
+            <button
+              v-if="!itemOnWishlist"
+              class="wishlist-btn"
+              @click="addToWishlist(selectedBook)"
+            >
+              <IconAddToWishlist class="icon" />
+              <span>Add to Wishlist</span>
+            </button>
+            <button
+              v-if="itemOnWishlist"
+              disabled
+              class="wishlist-btn"
+              @click="addToWishlist(selectedBook)"
+            >
+              <IconChecked class="icon" />
+              <span>On Wishlist</span>
+            </button>
+          </div>
+        </div>
+        <div class="description" v-if="selectedBook.description">
+          {{ selectedBook.description }}
+        </div>
       </div>
     </div>
   </div>
@@ -74,17 +126,20 @@ import ContextMenuItem from './components/ContextMenuItem.vue'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 import { SearchedBook } from './interfaces'
 import IconAddToWishlist from '../public/icons/add-to-wishlist-svgrepo-com.svg'
+import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
+import IconChecked from '../public/icons/check-square-svgrepo-com.svg'
 
 const searchField = useTemplateRef('search-field')
 
 async function addToWishlist(book: SearchedBook) {
   displayBookContextMenu.value = null
+  itemOnWishlist.value = true
   const response = await fetch(`${URL}/wishlist_book`, {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     method: 'POST',
     body: JSON.stringify(book),
   })
-  console.log(response.json())
+  console.log(response)
 }
 
 async function fetchAsync(url: string) {
@@ -102,6 +157,18 @@ const localBooks = ref<string[]>([])
 const displayBookContextMenu = ref<SearchedBook | null>(null)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
+const itemOnWishlist = ref(false)
+
+const selectedBook = ref<SearchedBook | null>(null)
+
+function openDetails(book: SearchedBook) {
+  itemOnWishlist.value = false
+  selectedBook.value = book
+}
+
+function closeDetails() {
+  selectedBook.value = null
+}
 
 function openContextMenu(event: MouseEvent, book: any) {
   contextMenuX.value = event.clientX
@@ -196,6 +263,123 @@ async function loadBooks(displayLoadingOverlay: boolean, filter: string) {
 @media (max-width: 640px) {
   .libraries-loading-spinner {
     margin-left: 1rem;
+  }
+}
+
+/* Sidebar / overlay styles */
+.details-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10;
+}
+
+@keyframes slidein {
+  from {
+    transform: translate(100%);
+  }
+  to {
+    transform: translate(0);
+  }
+}
+
+.details-panel {
+  width: 28rem;
+  max-width: 100vw;
+  height: 100%;
+  background: #fffc;
+  color: #111;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  position: relative;
+  overflow: auto;
+  backdrop-filter: blur(10px);
+  animation: slidein 0.1s linear forwards;
+}
+
+.close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.9rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+}
+
+.details-header {
+  display: flex;
+  gap: 1rem;
+}
+
+.details-header .cover {
+  width: 96px;
+  height: 144px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--book-border);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.details-header .meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.authors,
+.pub,
+.isbn {
+  font-size: 0.9rem;
+}
+
+.wishlist-btn {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgb(var(--primary-rgb));
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.wishlist-btn .icon {
+  width: 1em;
+  height: 1em;
+}
+
+.description {
+  margin-top: 1rem;
+  white-space: pre-wrap;
+}
+
+/* Mobile full-screen behavior */
+@media (max-width: 640px) {
+  .details-overlay {
+    justify-content: center;
+  }
+  .details-panel {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
   }
 }
 </style>
