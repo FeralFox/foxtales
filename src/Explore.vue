@@ -39,6 +39,18 @@
         <IconSearch />
       </div>
     </div>
+    <!-- Recent searches chips -->
+    <div v-if="recentSearches.length" class="recent-searches">
+      <button
+        v-if="books.length === 0"
+        v-for="term in recentSearches"
+        :key="term"
+        class="chip"
+        @click="selectRecent(term)"
+      >
+        {{ term }}
+      </button>
+    </div>
     <div
       style="
         overflow: hidden;
@@ -116,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { ref, useTemplateRef, onMounted } from 'vue'
 import { getKeysFromIndexedDb } from './dbaccess'
 import BookCoverThumbnail from './BookCoverThumbnail.vue'
 import Navigation from './Navigation.vue'
@@ -130,6 +142,41 @@ import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconChecked from '../public/icons/check-square-svgrepo-com.svg'
 
 const searchField = useTemplateRef('search-field')
+
+const RECENT_KEY = 'explore_recent_searches'
+const MAX_RECENT = 10
+const recentSearches = ref<string[]>([])
+
+function loadRecentSearches() {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY)
+    recentSearches.value = raw ? (JSON.parse(raw) as string[]) : []
+  } catch (_) {
+    recentSearches.value = []
+  }
+}
+
+function saveRecentSearch(term: string) {
+  const t = term.trim()
+  if (!t) return
+  const filtered = recentSearches.value.filter(
+    (x) => x.toLowerCase() !== t.toLowerCase(),
+  )
+  filtered.unshift(t)
+  recentSearches.value = filtered.slice(0, MAX_RECENT)
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recentSearches.value))
+  } catch (_) {
+    // ignore quota errors
+  }
+}
+
+function selectRecent(term: string) {
+  if (searchField.value) {
+    ;(searchField.value as HTMLInputElement).value = term
+  }
+  loadBooks(true, term)
+}
 
 async function addToWishlist(book: SearchedBook) {
   displayBookContextMenu.value = null
@@ -177,7 +224,9 @@ function openContextMenu(event: MouseEvent, book: any) {
 }
 
 function applyFilter() {
-  const searchValue = searchField.value!.value
+  const searchValue =
+    (searchField.value as HTMLInputElement | null)?.value ?? ''
+  saveRecentSearch(searchValue)
   loadBooks(true, searchValue)
 }
 
@@ -204,6 +253,9 @@ async function loadBooks(displayLoadingOverlay: boolean, filter: string) {
 // onMounted(() => {
 //   loadBooks(0, true, true, '#fxtl_tags:"=wishlist"')
 // })
+onMounted(() => {
+  loadRecentSearches()
+})
 </script>
 
 <style scoped>
@@ -245,6 +297,29 @@ async function loadBooks(displayLoadingOverlay: boolean, filter: string) {
 .search-field-btn svg {
   width: 1em;
   height: 1em;
+}
+
+.recent-searches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem 0;
+}
+
+.recent-label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.chip {
+  border: 1px solid var(--book-border);
+  background: #fff;
+  color: #333;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .libraries-loading-spinner {
