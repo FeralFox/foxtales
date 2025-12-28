@@ -313,13 +313,51 @@ onMounted(() => {
 }
 
 .chip {
-  border: 1px solid var(--book-border);
-  background: #fff;
-  color: #333;
-  padding: 0.15rem 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: linear-gradient(180deg, #ffffff, #f6f7f9);
+  color: #222;
+  padding: 0.35rem 0.75rem;
   border-radius: 999px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 6px 12px rgba(0, 0, 0, 0.06);
+  transition:
+    background var(--transition-default),
+    box-shadow var(--transition-default),
+    transform 80ms ease,
+    color var(--transition-default),
+    border-color var(--transition-default);
+}
+
+.chip:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff, #eef0f3);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.06),
+    0 10px 18px rgba(0, 0, 0, 0.05);
+  transform: translateY(-0.5px);
+}
+
+.chip:active:not(:disabled) {
+  transform: translateY(0);
+  background: linear-gradient(180deg, #f4f6f8, #e9edf2);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 6px 14px rgba(0, 0, 0, 0.06);
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(var(--primary-rgb), 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 6px 12px rgba(0, 0, 0, 0.06);
+  border-color: rgba(var(--primary-rgb), 0.45);
 }
 
 .libraries-loading-spinner {
