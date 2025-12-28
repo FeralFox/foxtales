@@ -51,6 +51,7 @@
           >
             <BookCoverThumbnail
               :book="book"
+              @click="onClickBook(book)"
               :display-book-downloaded-icon="
                 localBooks.includes(book.uuid.toString())
               "
@@ -92,6 +93,20 @@
       </button>
     </div>
   </div>
+  <BookDetailsSidebar
+    v-if="selectedBook"
+    :book="selectedBook"
+    :buttons="[]"
+    @action="() => {}"
+    :onClose="closeDetails"
+  >
+    <SidebarButton
+      :icon="IconRemove"
+      @click="confirmRemoveBook(selectedBook!.uuid)"
+    >
+      Remove from Wishlist
+    </SidebarButton>
+  </BookDetailsSidebar>
 </template>
 
 <script setup lang="ts">
@@ -102,12 +117,23 @@ import Navigation from './Navigation.vue'
 import { authHeaders, URL } from './constants'
 import ContextMenu from './components/ContextMenu.vue'
 import ContextMenuItem from './components/ContextMenuItem.vue'
-import IconRemove from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
+import IconRemove from '../public/icons/remove-from-wishlist-svgrepo-com.svg'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 import { BookMeta } from './interfaces'
+import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
+import SidebarButton from './components/SidebarButton.vue'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
+const selectedBook = ref<BookMeta | null>(null)
+
+async function onClickBook(book) {
+  selectedBook.value = book
+}
+
+function closeDetails() {
+  selectedBook.value = null
+}
 
 async function postAsync(url: string, data: object) {
   const response = await fetch(`${URL}/set_book_metadata`, {
@@ -156,6 +182,7 @@ function confirmRemoveBook(identifier: string) {
 }
 
 async function removeBookConfirmed() {
+  selectedBook.value = null
   if (!bookIdPendingDelete.value) return
   const identifier = bookIdPendingDelete.value
   isDeleting.value = true
@@ -251,7 +278,9 @@ async function loadBooks(
           { headers: authHeaders() },
         )
         if (resp.ok) {
-          covers.value[b.uuid] = await resp.text()
+          const cover = await resp.text()
+          covers.value[b.uuid] = cover
+          b.cover_url = cover
         }
       } catch {}
     }),

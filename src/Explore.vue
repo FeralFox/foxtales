@@ -7,7 +7,7 @@
     :title="displayBookContextMenu?.title"
   >
     <ContextMenuItem
-      @click="addToWishlist(displayBookContextMenu!)"
+      @click="openDetails(displayBookContextMenu!)"
       :icon="IconShowDetails"
     >
       Details
@@ -63,7 +63,7 @@
         <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
           <div
             v-for="book in books"
-            :key="book.id"
+            :key="book.uuid"
             @contextmenu.prevent="openContextMenu($event, book)"
             @click="openDetails(book)"
             style="cursor: pointer; position: relative"
@@ -80,19 +80,31 @@
       </div>
     </div>
     <!-- Book details sidebar / mobile overlay -->
-    <div v-if="selectedBook" class="details-overlay" @click.self="closeDetails">
-      <div class="details-panel">
-        <a class="close-btn" @click="closeDetails" aria-label="Close"> × </a>
-        <BookDetailsSidebar
-          :book="selectedBook"
-          :buttons="sidebarButtons"
-          @action="handleSidebarAction"
-        />
-        <div class="description" v-if="selectedBook.description">
-          {{ selectedBook.description }}
-        </div>
-      </div>
-    </div>
+    <BookDetailsSidebar
+      v-if="selectedBook"
+      :book="selectedBook"
+      :buttons="sidebarButtons"
+      @action="handleSidebarAction"
+      :onClose="closeDetails"
+    >
+      <SidebarButton
+        :icon="IconAddToWishlist"
+        v-if="itemOnWishlist === 0"
+        @click="addToWishlist(selectedBook)"
+      >
+        Add to Wishlist
+      </SidebarButton>
+      <SidebarButton
+        disabled
+        :icon="IconAddToWishlist"
+        v-if="itemOnWishlist === 1"
+      >
+        Adding to wishlist...
+      </SidebarButton>
+      <SidebarButton :icon="IconChecked" v-if="itemOnWishlist === 2" disabled>
+        On Wishlist
+      </SidebarButton>
+    </BookDetailsSidebar>
   </div>
 </template>
 
@@ -110,6 +122,7 @@ import IconAddToWishlist from '../public/icons/add-to-wishlist-svgrepo-com.svg'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconChecked from '../public/icons/check-square-svgrepo-com.svg'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
+import SidebarButton from './components/SidebarButton.vue'
 
 const searchField = useTemplateRef('search-field')
 
@@ -189,19 +202,40 @@ function closeDetails() {
 }
 
 const sidebarButtons = computed(() => {
-  if (!selectedBook.value) return [] as { key: string; label: string; icon?: any; disabled?: boolean }[]
+  if (!selectedBook.value)
+    return [] as {
+      key: string
+      label: string
+      icon?: any
+      disabled?: boolean
+    }[]
   switch (itemOnWishlist.value) {
     case 0:
       return [
-        { key: 'add-to-wishlist', label: 'Add to Wishlist', icon: IconAddToWishlist, disabled: false },
+        {
+          key: 'add-to-wishlist',
+          label: 'Add to Wishlist',
+          icon: IconAddToWishlist,
+          disabled: false,
+        },
       ]
     case 1:
       return [
-        { key: 'adding', label: 'Adding to wishlist...', icon: IconAddToWishlist, disabled: true },
+        {
+          key: 'adding',
+          label: 'Adding to wishlist...',
+          icon: IconAddToWishlist,
+          disabled: true,
+        },
       ]
     case 2:
       return [
-        { key: 'on-wishlist', label: 'On Wishlist', icon: IconChecked, disabled: true },
+        {
+          key: 'on-wishlist',
+          label: 'On Wishlist',
+          icon: IconChecked,
+          disabled: true,
+        },
       ]
     default:
       return []
@@ -305,11 +339,6 @@ onMounted(() => {
   padding: 0.5rem 1rem 0;
 }
 
-.recent-label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
 .chip {
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: linear-gradient(180deg, #ffffff, #f6f7f9);
@@ -374,123 +403,6 @@ onMounted(() => {
 @media (max-width: 640px) {
   .libraries-loading-spinner {
     margin-left: 1rem;
-  }
-}
-
-/* Sidebar / overlay styles */
-.details-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: flex-end;
-  z-index: 10;
-}
-
-@keyframes slidein {
-  from {
-    transform: translate(100%);
-  }
-  to {
-    transform: translate(0);
-  }
-}
-
-.details-panel {
-  width: 28rem;
-  max-width: 100vw;
-  height: 100%;
-  background: #fffc;
-  color: #111;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
-  padding: 1rem;
-  position: relative;
-  overflow: auto;
-  backdrop-filter: blur(10px);
-  animation: slidein 0.1s linear forwards;
-}
-
-.close-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.9rem;
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  color: inherit;
-}
-
-.details-header {
-  display: flex;
-  gap: 1rem;
-}
-
-.details-header .cover {
-  width: 96px;
-  height: 144px;
-  background-size: cover;
-  background-position: center;
-  border: 1px solid var(--book-border);
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.details-header .meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.title {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.subtitle {
-  color: #666;
-  font-size: 0.95rem;
-}
-
-.authors,
-.pub,
-.isbn {
-  font-size: 0.9rem;
-}
-
-.wishlist-btn {
-  margin-top: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgb(var(--primary-rgb));
-  color: #fff;
-  border: none;
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.wishlist-btn .icon {
-  width: 1em;
-  height: 1em;
-}
-
-.description {
-  margin-top: 1rem;
-  white-space: pre-wrap;
-}
-
-/* Mobile full-screen behavior */
-@media (max-width: 640px) {
-  .details-overlay {
-    justify-content: center;
-  }
-  .details-panel {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
   }
 }
 </style>

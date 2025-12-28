@@ -1,22 +1,25 @@
 <template>
-  <div class="details-header" v-if="book">
-    <div class="cover" :style="{ backgroundImage: `url(${book.cover_url})` }"></div>
-    <div class="meta">
-      <h2 class="title">{{ book.title }}</h2>
-      <div class="authors" v-if="book.authors?.length">{{ book.authors }}</div>
-      <div class="pub" v-if="year">{{ year }}</div>
-
-      <div class="buttons" v-if="buttons?.length">
-        <button
-          v-for="btn in buttons"
-          :key="btn.key"
-          class="wishlist-btn"
-          :disabled="btn.disabled"
-          @click.stop="$emit('action', btn.key)"
-        >
-          <component v-if="btn.icon" :is="btn.icon" class="icon" />
-          <span>{{ btn.label }}</span>
-        </button>
+  <div class="details-overlay" @click.self="props.onClose">
+    <div class="details-panel" v-if="book">
+      <div class="details-header">
+        <a class="close-btn" @click="props.onClose" aria-label="Close"> × </a>
+        <div
+          class="cover"
+          :style="{ backgroundImage: `url(${book.cover_url})` }"
+        ></div>
+        <div class="meta">
+          <h2 class="title">{{ book.title }}</h2>
+          <div class="authors" v-if="book.authors?.length">
+            {{ book.authors }}
+          </div>
+          <div class="pub" v-if="year">{{ year }}</div>
+          <div class="buttons">
+            <slot></slot>
+          </div>
+        </div>
+      </div>
+      <div class="description" v-if="book.description">
+        {{ book.description }}
       </div>
     </div>
   </div>
@@ -26,16 +29,9 @@
 import { computed } from 'vue'
 import type { SearchedBook } from '../interfaces'
 
-export interface SidebarButton {
-  key: string
-  label: string
-  icon?: any
-  disabled?: boolean
-}
-
 const props = defineProps<{
   book: SearchedBook | null | undefined
-  buttons?: SidebarButton[]
+  onClose?: () => void
 }>()
 
 const year = computed(() => {
@@ -86,26 +82,65 @@ const year = computed(() => {
   gap: 0.5rem;
 }
 
-.wishlist-btn {
-  margin-top: 0.25rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 6px;
-  background: linear-gradient(180deg, #ffffff, #f6f7f9);
-  color: #222;
+.close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.9rem;
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
   cursor: pointer;
+  color: inherit;
 }
 
-.wishlist-btn:disabled {
-  opacity: 0.7;
-  cursor: default;
+.details-panel {
+  width: 28rem;
+  max-width: 100vw;
+  height: 100%;
+  background: #fffc;
+  color: #111;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  position: relative;
+  overflow: auto;
+  backdrop-filter: blur(10px);
+  animation: slidein 0.1s linear forwards;
 }
 
-.icon {
-  width: 1em;
-  height: 1em;
+.description {
+  margin-top: 1rem;
+  white-space: pre-wrap;
+}
+
+/* Mobile full-screen behavior */
+@media (max-width: 640px) {
+  .details-overlay {
+    justify-content: center;
+  }
+  .details-panel {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* Sidebar / overlay styles */
+.details-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10;
+}
+
+@keyframes slidein {
+  from {
+    transform: translate(100%);
+  }
+  to {
+    transform: translate(0);
+  }
 }
 </style>

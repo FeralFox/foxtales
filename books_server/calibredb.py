@@ -28,11 +28,13 @@ class CalibreListData:
     author_sort: str
     authors: str
     cover: str
+    cover_url: str
     formats: list[str]
     id: int
     identifiers: dict[str, str]
     languages: list[str]
     last_modified: str
+    description: str
     pubdate: str
     series_index: float
     size: int
@@ -47,13 +49,16 @@ class CalibreListData:
     def from_dict(cls, data: dict) -> "CalibreListData":
         # Calibre returns the full book path for local library. We only want to have the format.
         formats = [f.rsplit(".", 1)[-1] for f in data.get("formats", [])]
+        book_uuid = data.get("uuid", "")
         return cls(
             id=data["id"],
             title=data.get("title", ""),
-            uuid=data.get("uuid", ""),
+            uuid=book_uuid,
             author_sort=data.get("author_sort", ""),
             authors=data.get("authors", ""),
             cover=data.get("cover", ""),
+            cover_url=f"/get_book_cover?book_uuid=${book_uuid}",
+            description=data.get("description", data.get("*fxtl_description", "")),
             formats=formats,
             identifiers=data.get("identifiers", {}),
             languages=data.get("languages", []),
@@ -77,14 +82,13 @@ class FullBookMetadata(CalibreListData):
 
 @dataclasses.dataclass
 class SearchedBook:
-    id: str
+    uuid: str
     title: str
-    subtitle: str
     pubdate: str
     cover_url: str
     description: str
     authors: str
-    isbn: str
+    identifiers: dict[str, str]
     _image_hash: str = ""
 
 
@@ -160,6 +164,8 @@ class CalibreDb:
             self._add_custom_column("fxtl_is_read", "Is Read", "bool", False)
         if not "fxtl_tags" in columns.values():
             self._add_custom_column("fxtl_tags", "Tags", "text", True)
+        if not "fxtl_description" in columns.values():
+            self._add_custom_column("fxtl_description", "Description", "text", False)
 
     def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
         logging.info(f"Add custom column {name}")
@@ -224,13 +230,15 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
         self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "")
+        self.set_custom_value(book_id, "fxtl_description", "")
         return book_id
 
     def add_book(self,
                  title: str,
                  authors: str,
                  isbn: str,
-                 cover_path: pathlib.Path) -> int:
+                 cover_path: pathlib.Path,
+                 description: str = "") -> int:
         result = subprocess.check_output(
             ['calibredb', "add", "--empty", "--isbn", isbn, "--title", title, "--authors", authors, "--cover",
              cover_path.absolute().as_posix(), *self._get_auth()])
@@ -243,6 +251,7 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
         self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "wishlist")
+        self.set_custom_value(book_id, "fxtl_description", description)
         return book_id
 
     def remove_book(self, book_id: int):
@@ -320,7 +329,9 @@ class CalibreDb:
                 cover_path = the_dir / "cover.png"
                 cover_path.write_bytes(cover_data)
             book_id = self.add_book(bookData.title,
-                                      bookData.authors,
-                                      bookData.isbn,
-                                      cover_path)
+                                    bookData.authors,
+                                    bookData.identifiers.get("ISBN", ""),
+                                    cover_path,
+                                    bookData.description
+                                    )
         return book_id

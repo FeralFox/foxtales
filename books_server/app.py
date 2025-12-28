@@ -265,11 +265,10 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
     secondary_results: list[SearchedBook] = []
     for result in books:
         words = [*result.title.split(" "),
-                 *(result.subtitle or "").split(" "),
                  *result.authors.split(" ")]
         lc_query = {itm.lower().strip("\".,'-+") for itm in search_query.split(" ")}
         lc_words = {wrd.lower().strip("\".,'-+") for wrd in words}
-        if search_query not in (result.isbn or "") and not (lc_query.intersection(lc_words)):
+        if search_query not in (result.identifiers or "") and not (lc_query.intersection(lc_words)):
             continue
         if result.title.rsplit(".", 1)[-1] in ["com", "zip", "rar", "pdf"]:
             continue
@@ -314,13 +313,12 @@ def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
                 date = ""
         description = description_container.text.replace("Read more...", "").strip()
         all_results[f"{title},{author}"] = SearchedBook(
-            id=uuid.uuid4().hex,
-            subtitle="",
+            uuid=uuid.uuid4().hex,
             title=title,
             pubdate=date,
             description=description.replace("Read more…", ""),
             authors=author,
-            isbn="",
+            identifiers={},
             cover_url=image_url,
         )
 
@@ -365,14 +363,13 @@ def _search_book(search_query: str) -> list[SearchedBook]:
     for result in x:
         authors = ", ".join(result.authors or [])
         results.append(SearchedBook(
-            id=result.id,
+            uuid=result.id,
             title=result.title,
-            subtitle=result.subtitle,
             pubdate=result.published_date,
             cover_url=result.large_thumbnail or result.small_thumbnail,
             description=result.description,
             authors=authors,
-            isbn=result.ISBN_13 or result.ISBN_10,
+            identifiers={},
         ))
     if not results and not '"' in search_query:
         # Seems Google is not good with searching... "exit black" is found, without " it isn't.

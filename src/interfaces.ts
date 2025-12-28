@@ -1,17 +1,33 @@
 export interface BookMeta {
-  id: string
-  uuid: string
   title: string
-  fxtl_is_read: boolean
+  uuid: string
+  author_sort: string
+  authors: string
+  cover: string
+  cover_url: string
+  formats: string[]
+  id: number
+  identifiers: Map<string, string>
+  languages: string[]
+  last_modified: string
+  description: string
+  pubdate: string
+  series_index: number
+  size: number
+  tags: string[]
+  timestamp: string
+  fxtl_owner: string
+  fxtl_is_read: Boolean
+  fxtl_progress: number
+  fxtl_progress_update: string
 }
 
 export interface SearchedBook {
-  id: string
+  uuid: string
   title: string
-  subtitle: string
   pubdate: string
   cover_url: string
   description: string
   authors: string
-  isbn: string
+  identifiers: Map<string, string>
 }
