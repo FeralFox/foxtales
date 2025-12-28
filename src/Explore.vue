@@ -101,19 +101,18 @@
               ISBN: {{ selectedBook.isbn }}
             </div>
             <button
-              v-if="!itemOnWishlist"
+              v-if="itemOnWishlist === 0"
               class="wishlist-btn"
               @click="addToWishlist(selectedBook)"
             >
               <IconAddToWishlist class="icon" />
               <span>Add to Wishlist</span>
             </button>
-            <button
-              v-if="itemOnWishlist"
-              disabled
-              class="wishlist-btn"
-              @click="addToWishlist(selectedBook)"
-            >
+            <button v-if="itemOnWishlist === 1" disabled class="wishlist-btn">
+              <IconAddToWishlist class="icon" />
+              <span>Adding to wishlist...</span>
+            </button>
+            <button v-if="itemOnWishlist === 2" disabled class="wishlist-btn">
               <IconChecked class="icon" />
               <span>On Wishlist</span>
             </button>
@@ -180,12 +179,13 @@ function selectRecent(term: string) {
 
 async function addToWishlist(book: SearchedBook) {
   displayBookContextMenu.value = null
-  itemOnWishlist.value = true
+  itemOnWishlist.value = 1
   const response = await fetch(`${URL}/wishlist_book`, {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     method: 'POST',
     body: JSON.stringify(book),
   })
+  itemOnWishlist.value = 2
   console.log(response)
 }
 
@@ -204,12 +204,12 @@ const localBooks = ref<string[]>([])
 const displayBookContextMenu = ref<SearchedBook | null>(null)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
-const itemOnWishlist = ref(false)
+const itemOnWishlist = ref(0)
 
 const selectedBook = ref<SearchedBook | null>(null)
 
 function openDetails(book: SearchedBook) {
-  itemOnWishlist.value = false
+  itemOnWishlist.value = 0
   selectedBook.value = book
 }
 
