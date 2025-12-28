@@ -85,6 +85,7 @@ class SearchedBook:
     description: str
     authors: str
     isbn: str
+    _image_hash: str = ""
 
 
 @dataclasses.dataclass
@@ -308,13 +309,16 @@ class CalibreDb:
         return FullBookMetadata(**data.__dict__)
 
     def wishlist_book(self, bookData: SearchedBook) -> int:
-        print(bookData)
         with tempfile.TemporaryDirectory() as tmpdir_str:
             cover_path = None
             if bookData.cover_url:
+                if bookData.cover_url.startswith("data:image/jpeg;base64,"):
+                    cover_data = base64.b64decode(bookData.cover_url.replace("data:image/jpeg;base64,", ""))
+                else:
+                    cover_data = requests.get(bookData.cover_url).content
                 the_dir = pathlib.Path(tmpdir_str)
                 cover_path = the_dir / "cover.png"
-                cover_path.write_bytes(requests.get(bookData.cover_url).content)
+                cover_path.write_bytes(cover_data)
             book_id = self.add_book(bookData.title,
                                       bookData.authors,
                                       bookData.isbn,

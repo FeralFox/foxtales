@@ -1,5 +1,6 @@
 import base64
 import dataclasses
+import hashlib
 import os
 import pathlib
 import re
@@ -22,6 +23,7 @@ import uvicorn
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from google_books_api_wrapper.exceptions import GoogleBooksAPIException
 from jwt import InvalidTokenError
+from multiprocessing.pool import ThreadPool
 from pydantic import BaseModel
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
@@ -319,9 +321,34 @@ def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
             description=description.replace("Read more…", ""),
             authors=author,
             isbn="",
-            cover_url=image_url
+            cover_url=image_url,
         )
+
+    # Download book covers on server.
+    # Pro: Ensuring that images can be loaded, no vanishing images in browser due to failed request.
+    # Deduplication based on cover, "Add to wishlist" reliable.
+    # Con: Half of the results cannot retrieve image, longer loading times.
+    # pool = ThreadPool(processes=3)
+    # pool.map(load_cover, list(all_results.values()))
+    # pool.close()
+    # pool.join()
+    #
+    # # Join books with the same image.
+    # simplified_results = {(book._image_hash or id(book)): book for book in all_results.values()}
+
     return list(all_results.values())
+
+
+def load_cover(item, timeout: int = 0.5):
+    try:
+        response = requests.get(item.cover_url, timeout=timeout)
+        byte_data = response.content
+        b64_data = base64.b64encode(byte_data)
+        item._image_hash = hashlib.md5(byte_data).hexdigest()
+        print("Load cover", item._image_hash)
+        item.cover_url = f"data:image/jpeg;base64,{b64_data.decode()}"
+    except:
+        item.cover_url = ""
 
 
 @functools.lru_cache(maxsize=10)
