@@ -83,41 +83,11 @@
     <div v-if="selectedBook" class="details-overlay" @click.self="closeDetails">
       <div class="details-panel">
         <a class="close-btn" @click="closeDetails" aria-label="Close"> × </a>
-        <div class="details-header">
-          <div
-            class="cover"
-            :style="{ backgroundImage: `url(${selectedBook.cover_url})` }"
-          ></div>
-          <div class="meta">
-            <h2 class="title">{{ selectedBook.title }}</h2>
-            <div v-if="selectedBook.subtitle" class="subtitle">
-              {{ selectedBook.subtitle }}
-            </div>
-            <div class="authors" v-if="selectedBook.authors?.length">
-              {{ selectedBook.authors }}
-            </div>
-            <div class="pub">{{ selectedBook.pubdate }}</div>
-            <div class="isbn" v-if="selectedBook.isbn">
-              ISBN: {{ selectedBook.isbn }}
-            </div>
-            <button
-              v-if="itemOnWishlist === 0"
-              class="wishlist-btn"
-              @click="addToWishlist(selectedBook)"
-            >
-              <IconAddToWishlist class="icon" />
-              <span>Add to Wishlist</span>
-            </button>
-            <button v-if="itemOnWishlist === 1" disabled class="wishlist-btn">
-              <IconAddToWishlist class="icon" />
-              <span>Adding to wishlist...</span>
-            </button>
-            <button v-if="itemOnWishlist === 2" disabled class="wishlist-btn">
-              <IconChecked class="icon" />
-              <span>On Wishlist</span>
-            </button>
-          </div>
-        </div>
+        <BookDetailsSidebar
+          :book="selectedBook"
+          :buttons="sidebarButtons"
+          @action="handleSidebarAction"
+        />
         <div class="description" v-if="selectedBook.description">
           {{ selectedBook.description }}
         </div>
@@ -127,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useTemplateRef, onMounted } from 'vue'
+import { ref, useTemplateRef, onMounted, computed } from 'vue'
 import { getKeysFromIndexedDb } from './dbaccess'
 import BookCoverThumbnail from './BookCoverThumbnail.vue'
 import Navigation from './Navigation.vue'
@@ -139,6 +109,7 @@ import { SearchedBook } from './interfaces'
 import IconAddToWishlist from '../public/icons/add-to-wishlist-svgrepo-com.svg'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconChecked from '../public/icons/check-square-svgrepo-com.svg'
+import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 
 const searchField = useTemplateRef('search-field')
 
@@ -215,6 +186,33 @@ function openDetails(book: SearchedBook) {
 
 function closeDetails() {
   selectedBook.value = null
+}
+
+const sidebarButtons = computed(() => {
+  if (!selectedBook.value) return [] as { key: string; label: string; icon?: any; disabled?: boolean }[]
+  switch (itemOnWishlist.value) {
+    case 0:
+      return [
+        { key: 'add-to-wishlist', label: 'Add to Wishlist', icon: IconAddToWishlist, disabled: false },
+      ]
+    case 1:
+      return [
+        { key: 'adding', label: 'Adding to wishlist...', icon: IconAddToWishlist, disabled: true },
+      ]
+    case 2:
+      return [
+        { key: 'on-wishlist', label: 'On Wishlist', icon: IconChecked, disabled: true },
+      ]
+    default:
+      return []
+  }
+})
+
+function handleSidebarAction(key: string) {
+  if (!selectedBook.value) return
+  if (key === 'add-to-wishlist') {
+    addToWishlist(selectedBook.value)
+  }
 }
 
 function openContextMenu(event: MouseEvent, book: any) {
