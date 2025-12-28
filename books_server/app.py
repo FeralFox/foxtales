@@ -277,7 +277,7 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
             primary_results.append(result)
         else:
             secondary_results.append(result)
-    primary_results.sort(key=lambda book: len(book.description), reverse=True)
+    primary_results.sort(key=lambda book: bool(book.description), reverse=True)
     return SearchedBookResponse(result=[*primary_results, *secondary_results])
 
 
