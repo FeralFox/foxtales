@@ -184,7 +184,7 @@ function cancelRemoveBook() {
 
 function applyFilter() {
   const searchValue = searchField.value!.value
-  loadBooks(0, true, true, `#fxtl_tags:"=wishlist" and ${searchValue}`)
+  loadBooks(0, `#fxtl_tags:"=wishlist" and ${searchValue}`, true, true)
 }
 
 const BOOKS_TO_PREFETCH = 10
@@ -231,10 +231,11 @@ async function preloadBooks(
 
 async function loadBooks(
   start_from: number,
+  filter: string,
   displayLoadingOverlay?: boolean,
   initialFetch?: boolean,
-  filter?: string,
 ) {
+  current_filter = filter
   if (displayLoadingOverlay) {
     booksLoading.value = true
   }
@@ -274,12 +275,14 @@ function onScroll() {
       return
     }
     scrollEventDisabled = true
-    loadBooks(books.value.length, false, false)
+    loadBooks(books.value.length, current_filter, false, false)
   }
 }
 
+const DEFAULT_FILTER = '#fxtl_tags:"=wishlist"'
+let current_filter = DEFAULT_FILTER
 onMounted(() => {
-  loadBooks(0, true, true, '#fxtl_tags:"=wishlist"')
+  loadBooks(0, DEFAULT_FILTER, true, true)
 })
 </script>
 

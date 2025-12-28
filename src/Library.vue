@@ -275,7 +275,7 @@ async function uploadFile(event: Event) {
         xhr.send(formData)
       })
 
-      await loadBooks(0, false)
+      await loadBooks(0, LIBRARY_DEFAULT_FILTER, false, true)
     } catch (e: any) {
       console.error(e)
       uploadError.value = e?.message || 'Upload failed'
@@ -434,17 +434,20 @@ async function downloadBook(uuid: string) {
   }
 }
 
+const LIBRARY_DEFAULT_FILTER = `not #fxtl_tags:"=wishlist"`
+
 function applyFilter() {
   const searchValue = searchField.value!.value
   if (searchValue) {
-    loadBooks(0, true, true, `${searchValue} and not #fxtl_tags:"=wishlist"`)
+    loadBooks(0, `${searchValue} and not #fxtl_tags:"=wishlist"`, true, true)
   } else {
-    loadBooks(0, true, true, `not #fxtl_tags:"=wishlist"`)
+    loadBooks(0, LIBRARY_DEFAULT_FILTER, true, true)
   }
 }
 
 const BOOKS_TO_PREFETCH = 10
 const booksLoading = ref(false)
+let current_filter = LIBRARY_DEFAULT_FILTER
 
 async function preloadBooks(
   filter: string | undefined,
@@ -487,10 +490,11 @@ async function preloadBooks(
 
 async function loadBooks(
   start_from: number,
+  filter: string,
   displayLoadingOverlay?: boolean,
   initialFetch?: boolean,
-  filter?: string,
 ) {
+  current_filter = filter
   if (displayLoadingOverlay) {
     booksLoading.value = true
   }
@@ -530,12 +534,12 @@ function onScroll() {
       return
     }
     scrollEventDisabled = true
-    loadBooks(books.value.length, false, false)
+    loadBooks(books.value.length, current_filter, false, false)
   }
 }
 
 onMounted(() => {
-  loadBooks(0, true, true, 'not #fxtl_tags:"=wishlist"')
+  loadBooks(0, LIBRARY_DEFAULT_FILTER, true, true)
 })
 </script>
 
