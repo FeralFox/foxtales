@@ -58,7 +58,7 @@ class CalibreListData:
             authors=data.get("authors", ""),
             cover=data.get("cover", ""),
             cover_url=f"/get_book_cover?book_uuid=${book_uuid}",
-            description=data.get("description", data.get("*fxtl_description", "")),
+            description=data.get("comments", ""),
             formats=formats,
             identifiers=data.get("identifiers", {}),
             languages=data.get("languages", []),
@@ -164,8 +164,6 @@ class CalibreDb:
             self._add_custom_column("fxtl_is_read", "Is Read", "bool", False)
         if not "fxtl_tags" in columns.values():
             self._add_custom_column("fxtl_tags", "Tags", "text", True)
-        if not "fxtl_description" in columns.values():
-            self._add_custom_column("fxtl_description", "Description", "text", False)
 
     def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
         logging.info(f"Add custom column {name}")
@@ -230,7 +228,6 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
         self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "")
-        self.set_custom_value(book_id, "fxtl_description", "")
         return book_id
 
     def add_book(self,
@@ -238,7 +235,8 @@ class CalibreDb:
                  authors: str,
                  isbn: str,
                  cover_path: pathlib.Path,
-                 description: str = "") -> int:
+                 description: str = "",
+                 date: str = "") -> int:
         result = subprocess.check_output(
             ['calibredb', "add", "--empty", "--isbn", isbn, "--title", title, "--authors", authors, "--cover",
              cover_path.absolute().as_posix(), *self._get_auth()])
@@ -251,7 +249,10 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
         self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "wishlist")
-        self.set_custom_value(book_id, "fxtl_description", description)
+        if description:
+            self.set_metadata(book_id, "comments", description)
+        if date:
+            self.set_metadata(book_id, "pubdate", date)
         return book_id
 
     def remove_book(self, book_id: int):
@@ -262,6 +263,16 @@ class CalibreDb:
         """Set custom value for a book."""
         return subprocess.check_output(
             ['calibredb', "set_custom", key, str(book_id), value, *self._get_auth()])
+
+    def set_metadata(self, book_id: int, key: str, value: str) -> bytes:
+        """Set custom value for a book."""
+        try:
+            return subprocess.check_output(
+                ['calibredb', "set_metadata", "--field", f'{key}:{value}', str(book_id), *self._get_auth()])
+        except Exception as error:
+            fields = subprocess.check_output(["calibredb", "set_metadata", "--list-fields", *self._get_auth()])
+            print(f"Unexpected response when calling calibredb set_metadata: {error}! Available fields: {fields}")
+            raise error
 
     def add_datafile(self, book_id: int, the_file: pathlib.Path) -> bytes:
         """Add a Calibre datafile."""
@@ -332,6 +343,7 @@ class CalibreDb:
                                     bookData.authors,
                                     bookData.identifiers.get("ISBN", ""),
                                     cover_path,
-                                    bookData.description
+                                    bookData.description,
+                                    bookData.pubdate
                                     )
         return book_id
