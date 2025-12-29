@@ -1,11 +1,12 @@
 <script setup lang="ts">
 defineProps<{
   icon?: Object
+  disabled?: boolean
 }>()
 </script>
 
 <template>
-  <div class="context-menu-item">
+  <div :class="`context-menu-item${disabled ? ' disabled' : ''}`">
     <component :is="icon" /> <slot></slot>
   </div>
 </template>
@@ -14,7 +15,7 @@ defineProps<{
 .context-menu-item {
   display: flex;
   align-items: center;
-  box-sizing:border-box;
+  box-sizing: border-box;
   gap: 0.5rem;
   width: 100%;
   text-align: left;
@@ -24,9 +25,26 @@ defineProps<{
   border-radius: 8px;
   cursor: pointer;
   color: #222;
-  transition: background 120ms ease, transform 60ms ease;
+  transition:
+    background 120ms ease,
+    transform 60ms ease;
 }
-.context-menu-item:hover { background: rgba(0,0,0,0.04); }
-.context-menu-item:active { transform: translateY(1px); }
-.context-menu-item svg { width:1.4em; height:1.4em; color: #000a; }
+.context-menu-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.context-menu-item:active {
+  transform: translateY(1px);
+}
+.context-menu-item svg {
+  width: 1.4em;
+  height: 1.4em;
+  color: #000a;
+}
+.context-menu-item.disabled {
+  pointer-events: none;
+  color: #aaa;
+}
+.context-menu-item.disabled svg {
+  color: #aaa;
+}
 </style>

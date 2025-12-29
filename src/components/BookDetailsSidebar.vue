@@ -33,13 +33,16 @@ const props = defineProps<{
   book: SearchedBook | null | undefined
   onClose?: () => void
 }>()
-
 const year = computed(() => {
   const d = props.book?.pubdate
   if (!d) return ''
   // Try to extract 4-digit year
   const m = String(d).match(/(\d{4})/)
-  return m ? m[1] : String(d)
+  const year = m ? m[1] : String(d)
+  if (year === '0101') {
+    return ''
+  }
+  return year
 })
 </script>
 

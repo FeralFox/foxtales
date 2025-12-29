@@ -2,6 +2,7 @@
   <Navigation active="library" />
   <ContextMenu
     v-model="displayBookContextMenu"
+    v-if="displayBookContextMenu"
     :x="contextMenuX"
     :y="contextMenuY"
     :title="displayBookContextMenu?.title"
@@ -15,6 +16,7 @@
     <ContextMenuItem
       @click="downloadBook(displayBookContextMenu!.uuid)"
       :icon="IconDownload"
+      :disabled="localBooks.includes(displayBookContextMenu.uuid.toString())"
     >
       Download to Device
     </ContextMenuItem>
