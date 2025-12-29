@@ -83,26 +83,28 @@
     <BookDetailsSidebar
       v-if="selectedBook"
       :book="selectedBook"
-      :buttons="sidebarButtons"
-      @action="handleSidebarAction"
       :onClose="closeDetails"
     >
       <SidebarButton
         :icon="IconAddToWishlist"
         v-if="itemOnWishlist === 0"
         @click="addToWishlist(selectedBook)"
+        title="Add to Wishlist"
       >
-        Add to Wishlist
       </SidebarButton>
       <SidebarButton
         disabled
         :icon="IconAddToWishlist"
         v-if="itemOnWishlist === 1"
+        title="Adding to wishlist..."
       >
-        Adding to wishlist...
       </SidebarButton>
-      <SidebarButton :icon="IconChecked" v-if="itemOnWishlist === 2" disabled>
-        On Wishlist
+      <SidebarButton
+        :icon="IconChecked"
+        v-if="itemOnWishlist === 2"
+        disabled
+        title="On Wishlist"
+      >
       </SidebarButton>
     </BookDetailsSidebar>
   </div>
@@ -170,7 +172,6 @@ async function addToWishlist(book: SearchedBook) {
     body: JSON.stringify(book),
   })
   itemOnWishlist.value = 2
-  console.log(response)
 }
 
 async function fetchAsync(url: string) {
@@ -193,6 +194,7 @@ const itemOnWishlist = ref(0)
 const selectedBook = ref<SearchedBook | null>(null)
 
 function openDetails(book: SearchedBook) {
+  displayBookContextMenu.value = null
   itemOnWishlist.value = 0
   selectedBook.value = book
 }
@@ -200,47 +202,6 @@ function openDetails(book: SearchedBook) {
 function closeDetails() {
   selectedBook.value = null
 }
-
-const sidebarButtons = computed(() => {
-  if (!selectedBook.value)
-    return [] as {
-      key: string
-      label: string
-      icon?: any
-      disabled?: boolean
-    }[]
-  switch (itemOnWishlist.value) {
-    case 0:
-      return [
-        {
-          key: 'add-to-wishlist',
-          label: 'Add to Wishlist',
-          icon: IconAddToWishlist,
-          disabled: false,
-        },
-      ]
-    case 1:
-      return [
-        {
-          key: 'adding',
-          label: 'Adding to wishlist...',
-          icon: IconAddToWishlist,
-          disabled: true,
-        },
-      ]
-    case 2:
-      return [
-        {
-          key: 'on-wishlist',
-          label: 'On Wishlist',
-          icon: IconChecked,
-          disabled: true,
-        },
-      ]
-    default:
-      return []
-  }
-})
 
 function handleSidebarAction(key: string) {
   if (!selectedBook.value) return

@@ -7,6 +7,12 @@
     :title="displayBookContextMenu?.title"
   >
     <ContextMenuItem
+      @click="openDetails(displayBookContextMenu!)"
+      :icon="IconShowDetails"
+    >
+      Details
+    </ContextMenuItem>
+    <ContextMenuItem
       @click="confirmRemoveBook(displayBookContextMenu!.uuid)"
       :icon="IconRemove"
     >
@@ -51,7 +57,7 @@
           >
             <BookCoverThumbnail
               :book="book"
-              @click="onClickBook(book)"
+              @click="openDetails(book)"
               :display-book-downloaded-icon="
                 localBooks.includes(book.uuid.toString())
               "
@@ -103,8 +109,8 @@
     <SidebarButton
       :icon="IconRemove"
       @click="confirmRemoveBook(selectedBook!.uuid)"
+      title="Remove from Wishlist"
     >
-      Remove from Wishlist
     </SidebarButton>
   </BookDetailsSidebar>
 </template>
@@ -122,12 +128,14 @@ import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 import { BookMeta } from './interfaces'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import SidebarButton from './components/SidebarButton.vue'
+import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
 const selectedBook = ref<BookMeta | null>(null)
 
-async function onClickBook(book) {
+async function openDetails(book) {
+  displayBookContextMenu.value = null
   selectedBook.value = book
 }
 

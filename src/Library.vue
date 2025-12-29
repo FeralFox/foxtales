@@ -7,12 +7,21 @@
     :title="displayBookContextMenu?.title"
   >
     <ContextMenuItem
+      @click="openDetails(displayBookContextMenu!)"
+      :icon="IconShowDetails"
+    >
+      Details
+    </ContextMenuItem>
+    <ContextMenuItem
       @click="downloadBook(displayBookContextMenu!.uuid)"
       :icon="IconDownload"
     >
       Download to Device
     </ContextMenuItem>
-    <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
+    <ContextMenuItem
+      @click="toggleIsRead(displayBookContextMenu)"
+      :icon="IconBookRead"
+    >
       {{
         displayBookContextMenu!.fxtl_is_read ? 'Mark as unread' : 'Mark as read'
       }}
@@ -76,7 +85,7 @@
           <div
             v-for="book in books"
             :key="book.uuid"
-            @click="downloadBook(book.uuid)"
+            @click="openDetails(book)"
             @contextmenu.prevent="openContextMenu($event, book)"
             style="cursor: pointer; position: relative"
           >
@@ -142,6 +151,33 @@
       </button>
     </div>
   </div>
+  <BookDetailsSidebar
+    v-if="selectedBook"
+    :book="selectedBook"
+    :buttons="[]"
+    @action="() => {}"
+    :onClose="closeDetails"
+  >
+    <SidebarButton
+      :icon="IconDownload"
+      @click="downloadBook(selectedBook.uuid)"
+      title="Download to Device"
+      :disabled="localBooks.includes(selectedBook.uuid.toString())"
+    >
+    </SidebarButton>
+    <SidebarButton
+      :icon="selectedBook.fxtl_is_read ? IconBookRead : IconBookUnread"
+      @click="toggleIsRead(selectedBook)"
+      :title="selectedBook.fxtl_is_read ? 'Mark as unread' : 'Mark as read'"
+    >
+    </SidebarButton>
+    <SidebarButton
+      :icon="IconRemove"
+      @click="confirmRemoveBook(selectedBook!.uuid)"
+      title="Remove from Library"
+    >
+    </SidebarButton>
+  </BookDetailsSidebar>
 </template>
 
 <script setup lang="ts">
@@ -162,11 +198,25 @@ import IconDownload from '../public/icons/download-svgrepo-com.svg'
 import IconRemove from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 import IconBookRead from '../public/icons/eye-svgrepo-com.svg'
+import IconBookUnread from '../public/icons/eye-filled-svgrepo-com.svg'
 import { syncedUpdate } from './sync'
 import { BookMeta } from './interfaces'
+import SidebarButton from './components/SidebarButton.vue'
+import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
+import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
+const selectedBook = ref<BookMeta | null>(null)
+
+async function openDetails(book) {
+  displayBookContextMenu.value = null
+  selectedBook.value = book
+}
+
+function closeDetails() {
+  selectedBook.value = null
+}
 
 async function postAsync(url: string, data: object) {
   const response = await fetch(`${URL}/set_book_metadata`, {
@@ -298,10 +348,9 @@ const showDeleteModal = ref(false)
 const bookIdPendingDelete = ref<string | null>(null)
 const isDeleting = ref(false)
 
-async function toggleIsRead() {
-  let new_value = !displayBookContextMenu.value!.fxtl_is_read
-  displayBookContextMenu.value!.fxtl_is_read = new_value
-  const book = displayBookContextMenu.value
+async function toggleIsRead(book) {
+  let new_value = !book.fxtl_is_read
+  book!.fxtl_is_read = new_value
   displayBookContextMenu.value = null
 
   if (await loadFromBookDb('books', book!.uuid, null)) {
@@ -510,7 +559,9 @@ async function loadBooks(
           { headers: authHeaders() },
         )
         if (resp.ok) {
-          covers.value[b.uuid] = await resp.text()
+          const cover = await resp.text()
+          covers.value[b.uuid] = cover
+          b.cover_url = cover
         }
       } catch {}
     }),
@@ -578,7 +629,7 @@ onMounted(() => {
 .upload-book {
   position: relative;
   width: 100%;
-  height: calc(100% - 2rem);
+  height: calc(100% - 3.1rem);
   border: 2px dashed var(--book-border);
   border-radius: 5px;
   margin-bottom: 5px;
