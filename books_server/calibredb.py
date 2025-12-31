@@ -9,14 +9,17 @@ import pathlib
 import re
 import subprocess
 import tempfile
+
+import io
 import time
 from typing import Optional
 
 import PIL.Image
+from PIL import ImageFile
 import requests
 
 LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
-
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class AuthenticationError(ValueError):
     pass
@@ -336,7 +339,7 @@ class CalibreDb:
                 if bookData.cover_url.startswith("data:image/jpeg;base64,"):
                     cover_data = base64.b64decode(bookData.cover_url.replace("data:image/jpeg;base64,", ""))
                 else:
-                    cover_data = requests.get(f"{bookData.cover_url}?ts={time.time()}").content
+                    cover_data = _get_image(f"{bookData.cover_url}?ts={time.time()}")
                 the_dir = pathlib.Path(tmpdir_str)
                 cover_path = the_dir / "cover.png"
                 cover_path.write_bytes(cover_data)
@@ -348,3 +351,17 @@ class CalibreDb:
                                     bookData.pubdate
                                     )
         return book_id
+
+def _get_image(image_url: str) -> bytes:
+    resp = requests.get(image_url, timeout=2, stream=True)
+    chunks = b""
+    try:
+        for chunk in resp.iter_content(1024):
+            print(len(chunks))
+            chunks += chunk
+    except requests.ConnectionError:
+        pass
+    image = PIL.Image.open(io.BytesIO(chunks))
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    return buffer.getvalue()

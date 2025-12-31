@@ -203,13 +203,6 @@ function closeDetails() {
   selectedBook.value = null
 }
 
-function handleSidebarAction(key: string) {
-  if (!selectedBook.value) return
-  if (key === 'add-to-wishlist') {
-    addToWishlist(selectedBook.value)
-  }
-}
-
 function openContextMenu(event: MouseEvent, book: any) {
   contextMenuX.value = event.clientX
   contextMenuY.value = event.clientY
