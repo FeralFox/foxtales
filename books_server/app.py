@@ -6,6 +6,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import traceback
 from datetime import timedelta, datetime, timezone
 from typing import Annotated, Optional
 
@@ -261,6 +262,10 @@ class SearchedBookResponse:
 @app.get("/explore_books")
 async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
     books = _search_book_annas_archive(search_query)
+    try:
+        books += _search_book_on_google_books(search_query)
+    except Exception:
+        traceback.print_exc()
     primary_results: list[SearchedBook] = []
     secondary_results: list[SearchedBook] = []
     for result in books:
@@ -276,7 +281,7 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
             primary_results.append(result)
         else:
             secondary_results.append(result)
-    primary_results.sort(key=lambda book: bool(book.description), reverse=True)
+    primary_results.sort(key=lambda book: (search_query.lower() in book.title.lower(), bool(book.description)), reverse=True)
     return SearchedBookResponse(result=[*primary_results, *secondary_results])
 
 
@@ -350,7 +355,7 @@ def load_cover(item, timeout: int = 0.5):
 
 
 @functools.lru_cache(maxsize=10)
-def _search_book(search_query: str) -> list[SearchedBook]:
+def _search_book_on_google_books(search_query: str) -> list[SearchedBook]:
     for _ in range(5):
         try:
             x = google_books_api_wrapper.api.GoogleBooksAPI().search_book(search_query)
@@ -373,7 +378,7 @@ def _search_book(search_query: str) -> list[SearchedBook]:
         ))
     if not results and not '"' in search_query:
         # Seems Google is not good with searching... "exit black" is found, without " it isn't.
-        return _search_book(f'"{search_query}"')
+        return _search_book_on_google_books(f'"{search_query}"')
     return results
 
 # Serve index.html for all other routes (SPA support)

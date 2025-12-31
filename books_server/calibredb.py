@@ -9,6 +9,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import time
 from typing import Optional
 
 import PIL.Image
@@ -335,7 +336,7 @@ class CalibreDb:
                 if bookData.cover_url.startswith("data:image/jpeg;base64,"):
                     cover_data = base64.b64decode(bookData.cover_url.replace("data:image/jpeg;base64,", ""))
                 else:
-                    cover_data = requests.get(bookData.cover_url).content
+                    cover_data = requests.get(f"{bookData.cover_url}?ts={time.time()}").content
                 the_dir = pathlib.Path(tmpdir_str)
                 cover_path = the_dir / "cover.png"
                 cover_path.write_bytes(cover_data)
