@@ -96,6 +96,7 @@
         disabled
         :icon="IconAddToWishlist"
         v-if="itemOnWishlist === 1"
+        :loading="true"
         title="Adding to wishlist..."
       >
       </SidebarButton>

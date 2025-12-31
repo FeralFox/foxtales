@@ -3,12 +3,19 @@ defineProps<{
   icon?: Object
   disabled?: boolean
   title?: string
+  loading?: boolean
 }>()
 </script>
 
 <template>
-  <button class="sidebar-btn" :disabled="disabled" :title="title">
-    <component v-if="icon" :is="icon" class="icon" />
+  <button
+    class="sidebar-btn"
+    :disabled="disabled"
+    :title="title"
+    :aria-busy="loading ? 'true' : undefined"
+  >
+    <span v-if="loading" class="spinner"></span>
+    <component v-else-if="icon" :is="icon" class="icon" />
     <!--    <span><slot></slot></span>-->
   </button>
 </template>
@@ -36,5 +43,20 @@ defineProps<{
   opacity: 0.7;
   cursor: default;
   color: #666;
+}
+
+.spinner {
+  width: calc(1.5em - 6px);
+  height: calc(1.5em - 6px);
+  border: 3px solid rgba(0, 0, 0, 0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
