@@ -261,7 +261,8 @@ class SearchedBookResponse:
 
 @app.get("/explore_books")
 async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
-    books = _search_book_annas_archive(search_query)
+    books = []
+    books += _search_book_annas_archive(search_query)
     try:
         books += _search_book_on_google_books(search_query)
     except Exception:
@@ -372,7 +373,7 @@ def _search_book_on_google_books(search_query: str) -> list[SearchedBook]:
             title=result.title,
             pubdate=result.published_date,
             cover_url=result.large_thumbnail or result.small_thumbnail,
-            description=result.description,
+            description=result.description or "",
             authors=authors,
             identifiers={},
         ))
