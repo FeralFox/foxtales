@@ -3,7 +3,7 @@
     <div
       class="readerArea"
       :class="{ containerExpanded: expandedToc }"
-      :style="{ backgroundColor }"
+      :style="{ background }"
     >
       <div
         v-if="showToc"
@@ -12,8 +12,14 @@
         type="button"
         @click="toggleToc"
       >
-        <span class="tocButtonBar" style="top: 35%"></span>
-        <span class="tocButtonBar" style="top: 66%"></span>
+        <span
+          class="tocButtonBar"
+          :style="{ top: '35%', background: currentFg }"
+        ></span>
+        <span
+          class="tocButtonBar"
+          :style="{ top: '66%', background: currentFg }"
+        ></span>
       </div>
 
       <book-view
@@ -30,8 +36,10 @@
         </template>
       </book-view>
 
-      <div class="arrow pre" @click="pre">‹</div>
-      <div class="arrow next" @click="next">›</div>
+      <div class="arrow pre" @click="pre" :style="{ color: currentFg }">‹</div>
+      <div class="arrow next" @click="next" :style="{ color: currentFg }">
+        ›
+      </div>
     </div>
 
     <div v-if="showToc && expandedToc">
@@ -97,6 +105,36 @@
               -
             </button>
           </div>
+          <div class="style-list">
+            <button
+              class="style-tile"
+              style="background: white; color: black"
+              @click="changeTheme('#fff', '#000')"
+            >
+              Default
+            </button>
+            <button
+              class="style-tile"
+              style="background: #e3d8ce; color: #52443b"
+              @click="changeTheme('#e3d8ce', '#52443b')"
+            >
+              Sepia
+            </button>
+            <button
+              class="style-tile"
+              style="background: #2d2e31; color: #d7d6d6"
+              @click="changeTheme('#2d2e31', '#d7d6d6')"
+            >
+              Dark
+            </button>
+            <button
+              class="style-tile"
+              style="background: black; color: white"
+              @click="changeTheme('#000', '#fff')"
+            >
+              Black
+            </button>
+          </div>
         </div>
       </div>
 
@@ -120,7 +158,9 @@ import IconBook from '../../../public/icons/book-svgrepo-com.svg'
 
 let currentFontSize = 140
 let currentSpacing = 1.4
+let currentFg = '#000'
 let selectedTab = ref('navigation')
+let background = ref('#fff')
 
 function selectNavigation() {
   selectedTab.value = 'navigation'
@@ -154,9 +194,16 @@ function reduceSpacing() {
   updateStyle()
 }
 
+function changeTheme(bg, fg) {
+  background.value = bg
+  currentFg = fg
+  updateStyle()
+}
+
 function updateStyle() {
   rendition.renderer.setStyles?.(
     getCSS({
+      color: currentFg,
       spacing: currentSpacing,
       justify: true,
       hyphenate: true,
@@ -274,10 +321,6 @@ const props = defineProps({
   getRendition: {
     type: Function,
   },
-  backgroundColor: {
-    type: String,
-    default: '#fff',
-  },
   onBtnNext: {
     type: Function,
   },
@@ -299,11 +342,12 @@ const bookName = ref('')
 
 let rendition = null
 
-const getCSS = ({ spacing, justify, hyphenate, fontSize }) => `
+const getCSS = ({ color, spacing, justify, hyphenate, fontSize }) => `
     @namespace epub "http://www.idpf.org/2007/ops";
     html {
         color-scheme: light;
         font-size: ${fontSize}%;
+        color: ${color};
     }
     /* https://github.com/whatwg/html/issues/5426 */
     @media (prefers-color-scheme: dark) {
@@ -378,6 +422,20 @@ const setLocation = (href, close = true) => {
 }
 </script>
 <style>
+.style-list {
+  display: grid;
+  flex-wrap: wrap;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.2rem;
+  margin: 0.2rem;
+}
+.style-tile {
+  line-height: 1.5rem;
+  margin: 0.3rem;
+  border-radius: 5px;
+  border: 2px solid currentColor;
+}
+
 /* container */
 .container {
   overflow: hidden;
@@ -409,7 +467,6 @@ const setLocation = (href, close = true) => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 /* toc */
 .tocBackground {
   position: absolute;
@@ -570,12 +627,15 @@ const setLocation = (href, close = true) => {
   outline: none;
   cursor: pointer;
   z-index: 99;
+  opacity: 0.2;
+}
+.tocButton:hover {
+  opacity: 0.6;
 }
 
 .tocButtonBar {
   position: absolute;
   width: 60%;
-  background: #ccc;
   height: 2px;
   left: 50%;
   margin: -1px -30%;
@@ -584,7 +644,9 @@ const setLocation = (href, close = true) => {
 }
 
 .tocButtonExpanded {
-  background: #f2f2f2;
+  background: rgba(157, 157, 157, 0.42);
+  opacity: 0.6;
+  cursor: pointer;
 }
 
 .arrow {
@@ -595,7 +657,7 @@ const setLocation = (href, close = true) => {
   top: 0;
   margin-top: -32px;
   font-size: 64px;
-  padding: 0 10px;
+  padding: 0 5px;
   color: #e2e2e2;
   font-family: arial, sans-serif;
   cursor: pointer;
@@ -605,10 +667,11 @@ const setLocation = (href, close = true) => {
   height: 100%;
   align-items: center;
   display: flex;
+  opacity: 0.2;
 }
 
 .arrow:hover {
-  color: #777;
+  opacity: 0.6;
 }
 
 .arrow:disabled {
