@@ -11,7 +11,7 @@
       @click="openDetails(displayBookContextMenu!)"
       :icon="IconShowDetails"
     >
-      Details
+      Display Details
     </ContextMenuItem>
     <ContextMenuItem
       @click="downloadBook(displayBookContextMenu!.uuid)"
@@ -164,7 +164,15 @@
       :icon="IconDownload"
       @click="downloadBook(selectedBook.uuid)"
       title="Download to Device"
-      :disabled="localBooks.includes(selectedBook.uuid.toString())"
+      :loading="
+        downloadQueue.includes(selectedBook.uuid.toString()) ||
+        downloadingId === selectedBook.uuid.toString()
+      "
+      :disabled="
+        downloadQueue.includes(selectedBook.uuid.toString()) ||
+        downloadingId === selectedBook.uuid.toString() ||
+        localBooks.includes(selectedBook.uuid.toString())
+      "
     >
     </SidebarButton>
     <SidebarButton

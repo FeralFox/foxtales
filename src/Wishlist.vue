@@ -10,7 +10,7 @@
       @click="openDetails(displayBookContextMenu!)"
       :icon="IconShowDetails"
     >
-      Details
+       Display Details
     </ContextMenuItem>
     <ContextMenuItem
       @click="confirmRemoveBook(displayBookContextMenu!.uuid)"
