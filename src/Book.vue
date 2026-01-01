@@ -13,17 +13,6 @@
       :on-btn-next="onBtnNext"
     >
     </vue-reader>
-
-    <div class="progress">
-      <input
-        type="range"
-        :value="current"
-        :min="0"
-        :max="100"
-        :step="1"
-        @change="change"
-      />
-    </div>
   </div>
 </template>
 
@@ -53,12 +42,6 @@ onMounted(() => {
 })
 
 let view = null
-const current = ref(0)
-const change = (e) => {
-  const value = e.target.value
-  current.value = value
-  view.goToFraction(parseFloat(value / 100))
-}
 
 const getRendition = async (val) => {
   view = val
@@ -86,7 +69,6 @@ async function onBtnNext() {
 const locationChange = async (detail) => {
   let { fraction } = detail
   isLastPage = fraction === 1
-  current.value = Math.floor(fraction * 100)
   if (fraction !== book_metadata.value.fxtl_progress) {
     const dateUpdate = new Date().toISOString()
     book_metadata.value.fxtl_progress = fraction
@@ -109,28 +91,5 @@ const locationChange = async (detail) => {
 <style scoped>
 .hidden {
   visibility: hidden;
-}
-.progress {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  z-index: 1;
-  color: #000;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.progress > input[type='number'] {
-  text-align: center;
-}
-
-.progress > input[type='range'] {
-  width: 100%;
-  height: 5px;
-  accent-color: #000;
-  opacity: 0.5;
 }
 </style>

@@ -5,6 +5,17 @@
       :class="{ containerExpanded: expandedToc }"
       :style="{ background }"
     >
+      <div class="progress">
+        <input
+          type="range"
+          :value="current"
+          :min="0"
+          :max="100"
+          :step="1"
+          @change="change"
+          :style="{ color: currentFg }"
+        />
+      </div>
       <div
         v-if="showToc"
         class="tocButton"
@@ -26,6 +37,7 @@
         ref="bookRef"
         v-bind="$attrs"
         :location="props.location"
+        @update:location="onUpdateLocation"
         :tocChanged="onTocChange"
         :getRendition="onGetRendition"
       >
@@ -156,6 +168,17 @@ import {
 import IconBookRead from '../../../public/icons/eye-svgrepo-com.svg'
 import IconBook from '../../../public/icons/book-svgrepo-com.svg'
 
+const current = ref(0)
+
+function onUpdateLocation({ fraction }) {
+  current.value = Math.floor(fraction * 100)
+}
+
+const change = (e) => {
+  const value = e.target.value
+  current.value = value
+  rendition.goToFraction(parseFloat(value / 100))
+}
 let currentFontSize = 140
 let currentSpacing = 1.4
 let currentFg = '#000'
@@ -422,6 +445,29 @@ const setLocation = (href, close = true) => {
 }
 </script>
 <style>
+.progress {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  color: currentColor;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.progress > input[type='number'] {
+  text-align: center;
+}
+
+.progress > input[type='range'] {
+  width: 100%;
+  height: 5px;
+  accent-color: currentColor;
+  opacity: 0.5;
+}
 .style-list {
   display: grid;
   flex-wrap: wrap;

@@ -70,6 +70,7 @@
   padding: 0.25rem 0.5rem;
   cursor: pointer;
   transition: var(--transition-default);
+  margin-bottom: 0.5rem;
 }
 .logout-btn:hover {
   background: #fff3;
