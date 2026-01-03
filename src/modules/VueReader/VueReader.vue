@@ -370,7 +370,7 @@ const getCSS = ({ color, spacing, justify, hyphenate, fontSize }) => `
     html {
         color-scheme: light;
         font-size: ${fontSize}%;
-        color: ${color};
+        color: ${color} !important;
     }
     /* https://github.com/whatwg/html/issues/5426 */
     @media (prefers-color-scheme: dark) {
@@ -380,6 +380,7 @@ const getCSS = ({ color, spacing, justify, hyphenate, fontSize }) => `
     }
     p, li, blockquote, dd {
         line-height: ${spacing};
+        color: ${color} !important;
         text-align: ${justify ? 'justify' : 'start'};
         -webkit-hyphens: ${hyphenate ? 'auto' : 'manual'};
         hyphens: ${hyphenate ? 'auto' : 'manual'};
