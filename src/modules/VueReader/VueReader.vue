@@ -3,7 +3,7 @@
     <div
       class="readerArea"
       :class="{ containerExpanded: expandedToc }"
-      :style="{ background }"
+      :style="{ background: styles.background }"
     >
       <div class="progress">
         <input
@@ -13,7 +13,7 @@
           :max="100"
           :step="1"
           @change="change"
-          :style="{ color: currentFg }"
+          :style="{ color: styles.color }"
         />
       </div>
       <div
@@ -25,11 +25,11 @@
       >
         <span
           class="tocButtonBar"
-          :style="{ top: '35%', background: currentFg }"
+          :style="{ top: '35%', background: styles.color }"
         ></span>
         <span
           class="tocButtonBar"
-          :style="{ top: '66%', background: currentFg }"
+          :style="{ top: '66%', background: styles.color }"
         ></span>
       </div>
 
@@ -48,8 +48,10 @@
         </template>
       </book-view>
 
-      <div class="arrow pre" @click="pre" :style="{ color: currentFg }">‹</div>
-      <div class="arrow next" @click="next" :style="{ color: currentFg }">
+      <div class="arrow pre" @click="pre" :style="{ color: styles.color }">
+        ‹
+      </div>
+      <div class="arrow next" @click="next" :style="{ color: styles.color }">
         ›
       </div>
     </div>
@@ -179,11 +181,25 @@ const change = (e) => {
   current.value = value
   rendition.goToFraction(parseFloat(value / 100))
 }
-let currentFontSize = 140
-let currentSpacing = 1.4
-let currentFg = '#000'
 let selectedTab = ref('navigation')
-let background = ref('#fff')
+
+function getStoredStyles() {
+  const item = localStorage.getItem('vue-reader-styles')
+  if (item) {
+    return JSON.parse(item)
+  }
+  return {}
+}
+
+const defaultStyles = {
+  fontSize: 140,
+  spacing: 1.4,
+  color: '#000',
+  background: '#fff',
+  ...getStoredStyles(),
+}
+
+const styles = ref(defaultStyles)
 
 function selectNavigation() {
   selectedTab.value = 'navigation'
@@ -197,11 +213,11 @@ function increaseFontSize() {
   if (!rendition) {
     return
   }
-  currentFontSize += 20
+  styles.value.fontSize += 20
   updateStyle()
 }
 function reduceFontSize() {
-  currentFontSize -= 20
+  styles.value.fontSize -= 20
   updateStyle()
 }
 
@@ -209,28 +225,26 @@ function increaseSpacing() {
   if (!rendition) {
     return
   }
-  currentSpacing += 0.2
+  styles.value.spacing += 0.2
   updateStyle()
 }
 function reduceSpacing() {
-  currentSpacing -= 0.2
+  styles.value.spacing -= 0.2
   updateStyle()
 }
 
 function changeTheme(bg, fg) {
-  background.value = bg
-  currentFg = fg
+  styles.value.background = bg
+  styles.value.color = fg
   updateStyle()
 }
 
 function updateStyle() {
+  localStorage.setItem('vue-reader-styles', JSON.stringify(styles.value))
   rendition.renderer.setStyles?.(
     getCSS({
-      color: currentFg,
-      spacing: currentSpacing,
       justify: true,
       hyphenate: true,
-      fontSize: currentFontSize,
     }),
   )
 }
@@ -365,12 +379,12 @@ const bookName = ref('')
 
 let rendition = null
 
-const getCSS = ({ color, spacing, justify, hyphenate, fontSize }) => `
+const getCSS = ({ justify, hyphenate }) => `
     @namespace epub "http://www.idpf.org/2007/ops";
     html {
         color-scheme: light;
-        font-size: ${fontSize}%;
-        color: ${color} !important;
+        font-size: ${styles.value.fontSize}%;
+        color: ${styles.value.color} !important;
     }
     /* https://github.com/whatwg/html/issues/5426 */
     @media (prefers-color-scheme: dark) {
@@ -378,9 +392,13 @@ const getCSS = ({ color, spacing, justify, hyphenate, fontSize }) => `
             color: lightblue;
         }
     }
+    span {
+      color: ${styles.value.color} !important;
+      line-height: ${styles.value.spacing} !important;
+    }
     p, li, blockquote, dd {
-        line-height: ${spacing};
-        color: ${color} !important;
+        line-height: ${styles.value.spacing};
+        color: ${styles.value.color} !important;
         text-align: ${justify ? 'justify' : 'start'};
         -webkit-hyphens: ${hyphenate ? 'auto' : 'manual'};
         hyphens: ${hyphenate ? 'auto' : 'manual'};
@@ -415,10 +433,8 @@ const onGetRendition = (val) => {
   bookName.value = title || ''
   val.renderer.setStyles?.(
     getCSS({
-      spacing: 1.4,
       justify: true,
       hyphenate: true,
-      fontSize: 140,
     }),
   )
 }
