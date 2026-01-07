@@ -289,7 +289,7 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
 @functools.lru_cache(maxsize=10)
 def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
     query = search_query.replace(" ", "+")
-    response = requests.get(f"https://annas-archive.org/search?index=&page=1&sort=&display=&q={query}")
+    response = requests.get(f"https://annas-archive.in/search?index=&page=1&sort=&display=&q={query}")
     b = bs4.BeautifulSoup(response.content)
     results = [c for c in b.findAll(class_="js-aarecord-list-outer")[0].children if c.name == "div"]
 
