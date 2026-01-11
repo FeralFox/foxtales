@@ -363,7 +363,6 @@ def _get_image(image_url: str) -> bytes:
     chunks = b""
     try:
         for chunk in resp.iter_content(1024):
-            print(len(chunks))
             chunks += chunk
     except requests.ConnectionError:
         pass

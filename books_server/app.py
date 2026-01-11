@@ -81,7 +81,7 @@ class AddBookStatus:
     success: bool
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -125,7 +125,7 @@ class ActiveUserData:
 active_users: dict[str, ActiveUserData] = {}
 
 @app.post("/token")
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     username = form_data.username
     password = form_data.password
     try:
@@ -154,7 +154,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
     return Token(access_token=access_token, token_type="bearer")
 
 @app.post("/register")
-async def register(username: str, password: str, email: str):
+def register(username: str, password: str, email: str):
     forbidden_symbols = set("'\"")
     forbidden_symbols_user = forbidden_symbols.union(":.")
     if forbidden_symbols_user.intersection(username):
@@ -166,7 +166,7 @@ async def register(username: str, password: str, email: str):
 
 # Serve index.html for the root
 @app.get("/")
-async def read_index():
+def read_index():
     return FileResponse(os.path.join(CLIENT_DIR, "index.html"))
 
 
@@ -181,20 +181,20 @@ async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_u
 
 
 @app.post("/wishlist_book")
-async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: SearchedBook) -> AddBookStatus:
+def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: SearchedBook) -> AddBookStatus:
     book_id = current_user.library.wishlist_book(data)
     return AddBookStatus(book_id=book_id, success=True)
 
 
 @app.get("/remove_book")
-async def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> Status:
+def add_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> Status:
     library = current_user.library
     library.remove_book(library.get_book_id_by_uuid(book_uuid))
     return Status(success=True)
 
 
 @app.get("/list_books")
-async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current_user)],
+def list_books(current_user: Annotated[ActiveUserData, Depends(get_current_user)],
                      search_query: str = "",
                      fields: str = "all",
                      max_items: int = -1,
@@ -208,14 +208,14 @@ async def list_books(current_user: Annotated[ActiveUserData, Depends(get_current
 
 
 @app.get("/get_book_metadata")
-async def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> FullBookMetadata:
+def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> FullBookMetadata:
     lib = current_user.library
     book_id = lib.get_book_id_by_uuid(book_uuid)
     return lib.get_book_metadata(book_id)
 
 
 @app.get("/get_book_cover")
-async def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, data_url: bool = False):
+def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, data_url: bool = False):
     lib = current_user.library
     mtype, data = lib.retrieve_cover(book_uuid)
     if data_url:
@@ -234,7 +234,7 @@ class BookMetaData(BaseModel):
 
 
 @app.post("/set_book_metadata")
-async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
+def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
     book_id = current_user.library.get_book_id_by_uuid(data.book_uuid)
     if data.fxtl_progress is not None:
         current_user.library.set_custom_value(book_id, "fxtl_progress",
@@ -246,7 +246,7 @@ async def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_
 
 
 @app.get("/get_book")
-async def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):
+def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):
     lib = current_user.library
     book_id = lib.get_book_id_by_uuid(book_uuid)
     mtype, data = current_user.library.retrieve_book(book_id, format)
@@ -259,17 +259,13 @@ class SearchedBookResponse:
 
 
 @app.get("/explore_books")
-async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
+def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
     books = []
-    t1 = threading.Thread(target=_run_threaded, args=(_search_book_annas_archive, search_query, books))
-    t2 = threading.Thread(target=_run_threaded, args=(_search_book_on_google_books, search_query, books))
-    t3 = threading.Thread(target=_run_threaded, args=(_search_book_on_baka_updates, search_query, books))
-    t1.start()
-    t2.start()
-    t3.start()
-    t1.join()
-    t2.join()
-    t3.join()
+    threads = []
+    for func in [_search_book_annas_archive, _search_book_on_google_books, _search_book_on_baka_updates]:
+        threads.append(threading.Thread(target=_run_threaded, args=(func, search_query, books)))
+    [t.start() for t in threads]
+    [t.join() for t in threads]
     primary_results: list[SearchedBook] = []
     secondary_results: list[SearchedBook] = []
     for result in books:
@@ -290,7 +286,9 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
 
 
 def _run_threaded(func: Callable, search_query: str, result_list: list[SearchedBook]):
+    t0 = time.time()
     result_list += func(search_query)
+    print(f"Calling {func.__name__} in {time.time() - t0:.2f} seconds")
 
 
 @functools.lru_cache(maxsize=10)
@@ -356,7 +354,6 @@ def load_cover(item, timeout: int = 0.5):
         byte_data = response.content
         b64_data = base64.b64encode(byte_data)
         item._image_hash = hashlib.md5(byte_data).hexdigest()
-        print("Load cover", item._image_hash)
         item.cover_url = f"data:image/jpeg;base64,{b64_data.decode()}"
     except:
         item.cover_url = ""
@@ -436,7 +433,7 @@ def _search_book_on_google_books(search_query: str) -> list[SearchedBook]:
 
 # Serve index.html for all other routes (SPA support)
 @app.get("/{path:path}", include_in_schema=False)
-async def serve_spa(path: str):
+def serve_spa(path: str):
     if (CLIENT_DIR / path).exists():
         return FileResponse(CLIENT_DIR / path)
     return FileResponse(CLIENT_DIR / "index.html")
