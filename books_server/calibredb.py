@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 
 import io
+import traceback
+
 import time
 from typing import Optional
 
@@ -339,7 +341,11 @@ class CalibreDb:
                 if bookData.cover_url.startswith("data:image/jpeg;base64,"):
                     cover_data = base64.b64decode(bookData.cover_url.replace("data:image/jpeg;base64,", ""))
                 else:
-                    cover_data = _get_image(f"{bookData.cover_url}?ts={time.time()}")
+                    try:
+                        cover_data = _get_image(f"{bookData.cover_url}")
+                    except Exception as exc:  # noqa
+                        logging.error(f"Could not fetch image for {bookData.cover_url}: {exc}")
+                        cover_data = b""
                 the_dir = pathlib.Path(tmpdir_str)
                 cover_path = the_dir / "cover.png"
                 cover_path.write_bytes(cover_data)
@@ -353,7 +359,7 @@ class CalibreDb:
         return book_id
 
 def _get_image(image_url: str) -> bytes:
-    resp = requests.get(image_url, timeout=2, stream=True)
+    resp = requests.get(image_url, timeout=8, stream=True)
     chunks = b""
     try:
         for chunk in resp.iter_content(1024):

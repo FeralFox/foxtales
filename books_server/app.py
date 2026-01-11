@@ -6,9 +6,9 @@ import pathlib
 import re
 import subprocess
 import tempfile
-import traceback
+import threading
 from datetime import timedelta, datetime, timezone
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Callable
 
 import functools
 
@@ -24,7 +24,6 @@ import uvicorn
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from google_books_api_wrapper.exceptions import GoogleBooksAPIException
 from jwt import InvalidTokenError
-from multiprocessing.pool import ThreadPool
 from pydantic import BaseModel
 from starlette import status
 from starlette.middleware.cors import CORSMiddleware
@@ -262,11 +261,15 @@ class SearchedBookResponse:
 @app.get("/explore_books")
 async def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], search_query: str) -> SearchedBookResponse:
     books = []
-    books += _search_book_annas_archive(search_query)
-    try:
-        books += _search_book_on_google_books(search_query)
-    except Exception:
-        traceback.print_exc()
+    t1 = threading.Thread(target=_run_threaded, args=(_search_book_annas_archive, search_query, books))
+    t2 = threading.Thread(target=_run_threaded, args=(_search_book_on_google_books, search_query, books))
+    t3 = threading.Thread(target=_run_threaded, args=(_search_book_on_baka_updates, search_query, books))
+    t1.start()
+    t2.start()
+    t3.start()
+    t1.join()
+    t2.join()
+    t3.join()
     primary_results: list[SearchedBook] = []
     secondary_results: list[SearchedBook] = []
     for result in books:
@@ -286,12 +289,16 @@ async def search_book(current_user: Annotated[ActiveUserData, Depends(get_curren
     return SearchedBookResponse(result=[*primary_results, *secondary_results])
 
 
+def _run_threaded(func: Callable, search_query: str, result_list: list[SearchedBook]):
+    result_list += func(search_query)
+
+
 @functools.lru_cache(maxsize=10)
 def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
     query = search_query.replace(" ", "+")
     response = requests.get(f"https://annas-archive.in/search?index=&page=1&sort=&display=&q={query}")
-    b = bs4.BeautifulSoup(response.content)
-    results = [c for c in b.findAll(class_="js-aarecord-list-outer")[0].children if c.name == "div"]
+    b = bs4.BeautifulSoup(response.content, features="html.parser")
+    results = [c for c in b.find_all(class_="js-aarecord-list-outer")[0].children if c.name == "div"]
 
     all_results = {}
     for result in results:
@@ -353,6 +360,51 @@ def load_cover(item, timeout: int = 0.5):
         item.cover_url = f"data:image/jpeg;base64,{b64_data.decode()}"
     except:
         item.cover_url = ""
+
+
+@functools.lru_cache(maxsize=10)
+def _search_book_on_baka_updates(search_query: str) -> list[SearchedBook]:
+    query = search_query.replace(" ", "+")
+    query_items = search_query.split(" ")
+    response = requests.get(f"https://www.mangaupdates.com/site/search/result?search={query}")
+    soup = bs4.BeautifulSoup(response.text, features="html.parser")
+    tags = [tag for tag in soup.find_all("h2") if tag.text == "Series"][0].next_sibling.find_all(title="Click for Series Info")
+    results = []
+    for result in tags:
+        url = result.attrs["href"]
+        title = result.text
+        if not all(item.lower() in title.lower() for item in query_items):
+            continue
+        year = result.parent.next_sibling.next_sibling.text.strip()
+        book = _analyze_baka_page(title, year, url)
+        results.append(book)
+        if len(results) >= 3:  # Accelerate listing results while reducing load on Baka.
+            break
+    return results
+
+
+def _analyze_baka_page(title: str, year: str, url: str) -> SearchedBook:
+    response =  requests.get(url)
+    soup = bs4.BeautifulSoup(response.text, features="html.parser")
+    description = [item for item in soup.find_all("b") if item.text == "Description"][0].parent.next_sibling.text
+    genre_tags = [item for item in soup.find_all("b") if item.text == "Genre"][0].parent.next_sibling.find_all("a")
+    genre = ", ".join(["Manga", *[tag.text for tag in genre_tags if not "Search for series" in tag.text]])
+    try:
+        image_url = soup.find_all(alt="Series Image")[0].attrs["src"]
+    except IndexError:
+        image_url = ""
+    authors = [item for item in soup.find_all("b") if item.text == "Author(s)"][0].parent.next_sibling.text
+
+    description = f"{description}\n\nGenre:\n{genre}"
+    return SearchedBook(
+        uuid=uuid.uuid4().hex,
+        title=title,
+        pubdate=year,
+        cover_url=image_url,
+        description=description,
+        authors=authors,
+        identifiers={}
+    )
 
 
 @functools.lru_cache(maxsize=10)
