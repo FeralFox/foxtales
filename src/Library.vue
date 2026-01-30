@@ -214,8 +214,10 @@ import { BookMeta } from './interfaces'
 import SidebarButton from './components/SidebarButton.vue'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
+import { computeInitialFetchCount } from './lib'
 
 const bookContainer = useTemplateRef('book-container')
+const uploadBook = useTemplateRef('upload-book')
 const searchField = useTemplateRef('search-field')
 const selectedBook = ref<BookMeta | null>(null)
 
@@ -512,14 +514,16 @@ async function preloadBooks(
   filter: string | undefined,
   start_from: number,
   initialFetch: boolean | undefined,
+  booksToFetch?: number,
 ) {
+  booksToFetch = booksToFetch || BOOKS_TO_PREFETCH
   localBooks.value = (await getKeysFromIndexedDb('books', 'books')) as string[]
   let filterUrl = ''
   if (filter) {
     filterUrl = `&search_query=${encodeURIComponent(filter)}`
   }
   const fetchedBooks = await fetchAsync(
-    `${URL}/list_books?max_items=${BOOKS_TO_PREFETCH}
+    `${URL}/list_books?max_items=${booksToFetch}
     &start_from=${start_from}${filterUrl}`,
   )
   // Immediately display all books as soon as they are available.
@@ -535,12 +539,12 @@ async function preloadBooks(
   // Then check if we need to fetch more books to fill the page.
   await nextTick()
   let hasScrollBars =
-    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight + 150
-  let mightHaveAdditionalBooks = fetchedBooks.length === BOOKS_TO_PREFETCH
+    bookContainer.value!.scrollHeight > bookContainer.value!.clientHeight + 100
+  let mightHaveAdditionalBooks = fetchedBooks.length === booksToFetch
   if (initialFetch && !hasScrollBars && mightHaveAdditionalBooks) {
     return [
       ...fetchedBooks,
-      ...(await preloadBooks(filter, start_from + BOOKS_TO_PREFETCH, true)),
+      ...(await preloadBooks(filter, start_from + booksToFetch, true)),
     ]
   } else {
     return fetchedBooks
@@ -552,12 +556,18 @@ async function loadBooks(
   filter: string,
   displayLoadingOverlay?: boolean,
   initialFetch?: boolean,
+  booksToFetch?: number,
 ) {
   current_filter = filter
   if (displayLoadingOverlay) {
     booksLoading.value = true
   }
-  const fetchedBooks = await preloadBooks(filter, start_from, initialFetch)
+  const fetchedBooks = await preloadBooks(
+    filter,
+    start_from,
+    initialFetch,
+    booksToFetch,
+  )
   booksLoading.value = false
 
   // Fetch covers as data urls
@@ -599,8 +609,20 @@ function onScroll() {
   }
 }
 
-onMounted(() => {
-  loadBooks(0, LIBRARY_DEFAULT_FILTER, true, true)
+onMounted(async () => {
+  // Ensure DOM is ready to measure tile and container sizes
+  await nextTick()
+  loadBooks(
+    0,
+    LIBRARY_DEFAULT_FILTER,
+    true,
+    true,
+    computeInitialFetchCount(
+      uploadBook.value,
+      bookContainer.value,
+      BOOKS_TO_PREFETCH,
+    ),
+  )
 })
 </script>
 
