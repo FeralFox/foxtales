@@ -11,6 +11,8 @@
       :getRendition="getRendition"
       @update:location="locationChange"
       :on-btn-next="onBtnNext"
+      :annotations="annotations"
+      :on-annotation-updated="onAnnotationUpdate"
     >
     </vue-reader>
   </div>
@@ -24,6 +26,7 @@ import { syncedUpdate } from './sync'
 
 const url = ref('')
 const book_metadata = ref('')
+const annotations = ref({})
 const initialPosition = ref(0)
 const initialized = ref(false)
 let isLastPage = false
@@ -32,6 +35,8 @@ const loadBook = async () => {
   const book_id = window.location.hash.split('?')[1].slice(3)
   const bmm = await loadFromBookDb('books', book_id)
   book_metadata.value = bmm
+  const anno = await loadFromBookDb('annotations', book_id, {})
+  annotations.value = anno
   initialPosition.value = book_metadata.value.fxtl_progress
   const blob = await loadFromIndexedDB('data', 'data', book_id)
   const format = bmm.formats[0].toLowerCase()
@@ -64,6 +69,20 @@ async function onBtnNext() {
     })
     window.location.hash = '/'
   }
+}
+
+const onAnnotationUpdate = async (modified_highlight, allHighlights) => {
+  await saveToBookDb(
+    'annotations',
+    toRaw(allHighlights),
+    book_metadata.value.uuid,
+  )
+  syncedUpdate(
+    'update-annotations',
+    book_metadata.value.uuid,
+    modified_highlight,
+    true,
+  )
 }
 
 const locationChange = async (detail) => {

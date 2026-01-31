@@ -48,6 +48,29 @@
         </template>
       </book-view>
 
+      <!-- color picker displayed when user selects text -->
+      <div
+        v-if="colorPicker.show"
+        class="highlight-color-picker"
+        :style="{ left: colorPicker.x + 'px', top: colorPicker.y + 'px' }"
+      >
+        <button
+          class="picker-btn picker-yellow"
+          @click="chooseHighlight('yellow')"
+        >
+          Yellow
+        </button>
+        <button
+          class="picker-btn picker-green"
+          @click="chooseHighlight('green')"
+        >
+          Green
+        </button>
+        <button class="picker-btn picker-cancel" @click="cancelHighlight()">
+          ×
+        </button>
+      </div>
+
       <div class="arrow pre" @click="pre" :style="{ color: styles.color }">
         ‹
       </div>
@@ -64,6 +87,12 @@
             :class="selectedTab === 'navigation' ? 'selectedTab' : ''"
           >
             <IconBook />
+          </div>
+          <div
+            @click="selectAnnotations"
+            :class="selectedTab === 'annotations' ? 'selectedTab' : ''"
+          >
+            <IconPen />
           </div>
           <div
             @click="selectView"
@@ -86,6 +115,25 @@
             :current="currentHref"
             :setLocation="setLocation"
           />
+        </div>
+
+        <div v-if="selectedTab === 'annotations'">
+          <div v-for="chapter in Object.keys(annotations)">
+            <div class="annotationsChapter">Chapter {{ chapter }}</div>
+            <div
+              v-for="annotation of annotations[chapter]"
+              class="annotationCard"
+            >
+              <div
+                class="annotationCardColor"
+                :style="{
+                  background:
+                    annotation.category === 'green' ? '#00c800' : '#ffff00',
+                }"
+              />
+              {{ annotation.text }}
+            </div>
+          </div>
         </div>
 
         <div v-if="selectedTab === 'view'">
@@ -157,6 +205,7 @@
   </div>
 </template>
 <script setup>
+import { Overlayer } from '../utils/foliatejs/overlayer.js'
 import BookView from '../BookView/BookView.vue'
 import {
   ref,
@@ -167,13 +216,22 @@ import {
   Transition,
   h as _h,
 } from 'vue'
+import { get_uuid } from '../../lib'
 import IconBookRead from '../../../public/icons/eye-svgrepo-com.svg'
+import IconPen from '../../../public/icons/pen-square-svgrepo-com.svg'
 import IconBook from '../../../public/icons/book-svgrepo-com.svg'
 
 const current = ref(0)
 
-function onUpdateLocation({ fraction }) {
-  current.value = Math.floor(fraction * 100)
+function redrawUserHighlights(section) {
+  for (let highlight of userHighlights[section] || []) {
+    highlightFromUserHighlight(highlight)
+  }
+}
+
+function onUpdateLocation(params) {
+  redrawUserHighlights(params.section.current)
+  current.value = Math.floor(params.fraction * 100)
 }
 
 const change = (e) => {
@@ -207,6 +265,10 @@ function selectNavigation() {
 
 function selectView() {
   selectedTab.value = 'view'
+}
+
+function selectAnnotations() {
+  selectedTab.value = 'annotations'
 }
 
 function increaseFontSize() {
@@ -361,6 +423,12 @@ const props = defineProps({
   onBtnNext: {
     type: Function,
   },
+  onAnnotationUpdated: { type: Function },
+  annotations: { type: Object(), default: {} },
+  // Optional hook: called when user selects text; receives position { x, y }
+  onTextSelected: {
+    type: Function,
+  },
 })
 
 const book = reactive({
@@ -378,6 +446,18 @@ const currentHref = ref(null)
 const bookName = ref('')
 
 let rendition = null
+
+// transient color picker state
+const colorPicker = reactive({
+  show: false,
+  x: 0,
+  y: 0,
+  range: null,
+  index: null,
+  doc: null,
+  cfi: null,
+  text: '',
+})
 
 const getCSS = ({ justify, hyphenate }) => `
     @namespace epub "http://www.idpf.org/2007/ops";
@@ -431,13 +511,136 @@ const onGetRendition = (val) => {
   rendition = val
   const title = book.metadata?.title
   bookName.value = title || ''
+  userHighlights = props.annotations
   val.renderer.setStyles?.(
     getCSS({
       justify: true,
       hyphenate: true,
     }),
   )
+
+  // helper: attach selection listeners inside current contents
+  const attachSelectionHandlers = () => {
+    try {
+      const contents = val.renderer?.getContents?.() || []
+      contents.forEach((content) => {
+        if (content.__ft_sel_attached) return
+        content.__ft_sel_attached = true
+        const doc = content.doc
+        doc.addEventListener('mouseup', (e) => {
+          try {
+            const sel = doc.getSelection()
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) return
+            const range = sel.getRangeAt(0)
+            if (!range || String(sel).trim() === '') return
+            const idx = content.index
+            const cfi =
+              typeof val.getCFI === 'function' ? val.getCFI(idx, range) : null
+            // position within the reader area
+            console.log('VAL', content)
+            const container = document.querySelector('.readerArea')
+            const rect = container?.getBoundingClientRect?.() || {
+              left: 0,
+              top: 0,
+            }
+            console.log('EVT', e)
+            colorPicker.x = Math.max(8, e.clientX - rect.left)
+            colorPicker.y = Math.max(8, e.clientY - rect.top)
+            colorPicker.range = range
+            colorPicker.index = idx
+            colorPicker.doc = doc
+            colorPicker.cfi = cfi
+            colorPicker.text = String(sel)
+            colorPicker.show = true
+            // user hook
+            if (typeof props.onTextSelected === 'function') {
+              props.onTextSelected({ x: e.clientX, y: e.clientY })
+            }
+          } catch (_) {}
+        })
+      })
+    } catch (_) {}
+  }
+
+  // attach now and again on further loads
+  attachSelectionHandlers()
+  // re-apply when a new section (chapter) is loaded
+  val.addEventListener?.('load', () => {
+    attachSelectionHandlers()
+  })
 }
+
+// persistent user highlights across navigation
+let userHighlights = {}
+
+const cancelHighlight = () => {
+  try {
+    colorPicker.doc?.defaultView?.getSelection?.().removeAllRanges?.()
+  } catch (_) {}
+  colorPicker.show = false
+  colorPicker.range = null
+  colorPicker.doc = null
+  colorPicker.index = null
+  colorPicker.cfi = null
+  colorPicker.text = ''
+}
+
+const chooseHighlight = (category) => {
+  if (!colorPicker.range || !colorPicker.doc) return cancelHighlight()
+  const cfi = colorPicker.cfi
+  const index = colorPicker.index
+  try {
+    if (cfi) {
+      let userHighlight = {
+        uuid: get_uuid(),
+        cfi,
+        index,
+        category,
+        text: colorPicker.text,
+      }
+      if (!userHighlights[index]) {
+        userHighlights[index] = []
+      }
+      userHighlights[index].push(userHighlight)
+      highlightFromUserHighlight(userHighlight)
+      props.onAnnotationUpdated(['add', userHighlight], userHighlights)
+    }
+  } catch (err) {
+    console.warn('Failed to apply highlight:', err)
+  }
+  cancelHighlight()
+}
+
+// Accepts an entry from userHighlights: { cfi, index, category, text? }
+// Returns true if the overlay highlight was added successfully
+function highlightFromUserHighlight(entry) {
+  try {
+    if (!entry || !entry.cfi || !rendition) return false
+    const resolved =
+      typeof rendition.resolveCFI === 'function'
+        ? rendition.resolveCFI(entry.cfi)
+        : null
+    if (!resolved) return false
+    const { index, anchor } = resolved
+    const contents = rendition.renderer?.getContents?.() || []
+    const content = contents.find((c) => c.index === index && c.overlayer)
+    if (!content) return false
+    const doc = content.doc
+    const range = typeof anchor === 'function' ? anchor(doc) : null
+    // if (!(range instanceof Range)) return false
+    const key = entry.cfi
+    // map our simple color names to solid colors (opacity handled by Overlayer)
+    const color = entry.category === 'green' ? '#00c800' : '#ffff00'
+    content.overlayer.add(key, range, Overlayer.highlight, { color })
+    return true
+  } catch (e) {
+    console.warn('Failed to overlay highlight from entry:', e)
+    return false
+  }
+}
+
+// Make the function available to parent components if needed
+defineExpose({ highlightFromUserHighlight })
 
 const onTocChange = (_toc) => {
   toc.value = _toc
@@ -466,6 +669,27 @@ const setLocation = (href, close = true) => {
 }
 </script>
 <style>
+.annotationsChapter {
+  font-weight: bold;
+  width: 100%;
+  text-align: center;
+}
+.annotationCard {
+  background: white;
+  margin: 0.5rem;
+  border-radius: 5px;
+  box-shadow: 1px 1px 3px #0002;
+  position: relative;
+  padding: 0.5rem 1rem 0.5rem 0.5rem;
+  overflow: hidden;
+}
+.annotationCardColor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0.5rem;
+  height: 100%;
+}
 .progress {
   position: absolute;
   bottom: 0;
@@ -763,5 +987,35 @@ const setLocation = (href, close = true) => {
   color: #ccc;
   text-align: center;
   margin-top: -0.5em;
+}
+
+/* selection color picker */
+.highlight-color-picker {
+  position: absolute;
+  z-index: 1000;
+  background: rgba(40, 40, 40, 0.95);
+  color: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+}
+.picker-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.picker-yellow {
+  background: #ffe766;
+}
+.picker-green {
+  background: #6ee57b;
+}
+.picker-cancel {
+  background: #555;
+  color: #eee;
 }
 </style>

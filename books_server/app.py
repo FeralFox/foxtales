@@ -7,13 +7,15 @@ import re
 import subprocess
 import tempfile
 import threading
+import traceback
 from datetime import timedelta, datetime, timezone
-from typing import Annotated, Optional, Callable
+from typing import Annotated, Optional, Callable, Union
 
 import functools
 
 import bs4
 import google_books_api_wrapper.api
+import json
 import jwt
 import fastapi
 import requests
@@ -30,7 +32,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, FileResponse
 from starlette.staticfiles import StaticFiles
 
-from calibredb import CalibreDb, CalibreListData, FullBookMetadata, FxtlData, UserData, SearchedBook
+from calibredb import CalibreDb, CalibreListData, FullBookMetadata, FxtlData, UserData, SearchedBook, _Annotation
 from lib import is_correct_password, hash_new_password
 
 BASE_PATH = pathlib.Path(__file__).parent.parent
@@ -39,7 +41,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEFAULT_USER = os.getenv("DEFAULT_USER")
 DEFAULT_PASSWORD = os.getenv("DEFAULT_USER_PASSWORD")
 DEFAULT_USER_EMAIL = os.getenv("DEFAULT_USER_EMAIL")
-LIBRARY_PATH = pathlib.Path(os.getenv("FOXTALES_LIBRARY_PATH", BASE_PATH / "volume" / "library"))
+LIBRARY_PATH = pathlib.Path(os.getenv("FOXTALES_LIBRARY_PATH", BASE_PATH / "volume" / "libraries"))
 COMMON_LIBRARY_PATH = LIBRARY_PATH / "common"
 USER_LIBRARY_PATH = LIBRARY_PATH / "users"
 DEFAULT_USER_LIBRARY_PATH = LIBRARY_PATH / "users" / DEFAULT_USER
@@ -139,6 +141,7 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
             # Incorrect password
             raise ValueError()
     except Exception:
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
@@ -214,6 +217,16 @@ def get_book_details(current_user: Annotated[ActiveUserData, Depends(get_current
     return lib.get_book_metadata(book_id)
 
 
+@dataclasses.dataclass
+class BookAnnotationsResponse:
+    annotations: list[_Annotation]
+
+
+@app.get("/get_book_annotations")
+def get_book_annotations(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str) -> BookAnnotationsResponse:
+    return BookAnnotationsResponse(current_user.library.get_book_annotations(book_uuid))
+
+
 @app.get("/get_book_cover")
 def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, data_url: bool = False):
     lib = current_user.library
@@ -225,24 +238,30 @@ def get_book_cover(current_user: Annotated[ActiveUserData, Depends(get_current_u
         return Response(content=data, media_type=mtype)
 
 
-class BookMetaData(BaseModel):
+class SetBookMetaDataParams(BaseModel):
     book_uuid: str
-    fxtl_progress: Optional[float] = None
-    fxtl_progress_update: Optional[str] = None
-    fxtl_is_read: Optional[bool] = None
-    fxtl_tags: Optional[list[str]] = None
+    update_type: str
+    update_data: Union[list, dict]
 
 
 @app.post("/set_book_metadata")
-def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookMetaData):
+def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: SetBookMetaDataParams):
     book_id = current_user.library.get_book_id_by_uuid(data.book_uuid)
-    if data.fxtl_progress is not None:
+    if data.update_type == "update-progress":
         current_user.library.set_custom_value(book_id, "fxtl_progress",
-                                              str(data.fxtl_progress))
+                                              str(data.update_data["fxtl_progress"]))
         current_user.library.set_custom_value(book_id, "fxtl_progress_update",
-                                              data.fxtl_progress_update.replace("Z", "+00:00"))
-    if data.fxtl_is_read is not None:
-        current_user.library.set_custom_value(book_id, "fxtl_is_read", str(data.fxtl_is_read))
+                                              data.update_data["fxtl_progress_update"].replace("Z", "+00:00"))
+    elif data.update_type == "update-read-status":
+        current_user.library.set_custom_value(book_id, "fxtl_is_read", str(data["fxtl_is_read"]))
+    elif data.update_type == "update-annotations":
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            data_path = current_user.library.get_book_path(data.book_uuid)
+            annotations_path = data_path / "data" / "annotations.jsonl"
+            with annotations_path.open("a") as annotations_path:
+                for operation, entry in data.update_data:
+                    if operation == "add":
+                        annotations_path.write(f"{json.dumps(entry)}\n")
 
 
 @app.get("/get_book")

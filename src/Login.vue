@@ -30,6 +30,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { URL } from './constants'
+import { syncDbUpdates } from './sync'
 
 const username = ref('')
 const password = ref('')
@@ -61,9 +62,11 @@ async function onSubmit() {
     // Save token for subsequent requests
     localStorage.setItem('auth_token', data.access_token)
     localStorage.setItem('current_user', username.value)
+    await syncDbUpdates()
     // Navigate to library view
     window.location.hash = '/lib'
   } catch (e: any) {
+    console.error(e)
     error.value = e?.message ?? 'Login failed'
   } finally {
     loading.value = false

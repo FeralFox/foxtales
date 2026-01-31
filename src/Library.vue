@@ -426,6 +426,9 @@ async function downloadBook(uuid: string) {
     const bookMetaData = await fetchAsync(
       `${URL}/get_book_metadata?book_uuid=${uuid}`,
     )
+    const bookAnnotationsResponse = await fetchAsync(
+      `${URL}/get_book_annotations?book_uuid=${uuid}`,
+    )
     const format = bookMetaData.formats?.[0]
 
     // Download book blob with progress using XHR
@@ -478,6 +481,14 @@ async function downloadBook(uuid: string) {
     await saveToIndexedDB('books', 'books', bookMetaData, uuid)
     await saveToIndexedDB(`cover`, 'cover', coverBase64, uuid)
     await saveToIndexedDB(`data`, 'data', blob, uuid)
+    const annotations = {}
+    for (let annotation of bookAnnotationsResponse.annotations) {
+      if (!annotations[annotation.index]) {
+        annotations[annotation.index] = []
+      }
+      annotations[annotation.index].push(annotation)
+    }
+    await saveToIndexedDB('books', 'annotations', annotations, uuid)
     localBooks.value.push(bookMetaData.uuid.toString())
   } catch (e: any) {
     console.error(e)
