@@ -25,6 +25,8 @@ RUN ./venv/bin/pip install -r requirements.txt
 COPY books_server/ .
 COPY --from=fe_builder dist ./client
 
+RUN python --version
+
 ENV S6_KEEP_ENV=1
 ENV FOXTALES_LIBRARY_PATH="/config/libraries"
 ENV FOXTALES_CLIENT_DIR="/home/nightowl/client"
