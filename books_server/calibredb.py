@@ -350,7 +350,7 @@ class CalibreDb:
                                     )
         return book_id
 
-    def get_book_annotations(self, book_uuid: str) -> list[_Annotation]:
+    def get_book_annotations(self, book_uuid: str) -> list["_Annotation"]:
         path = self.get_book_path(book_uuid)
         annotations_file = path / "data" / "annotations.jsonl"
         if not annotations_file.exists():
