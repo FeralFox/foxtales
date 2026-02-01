@@ -1,5 +1,18 @@
 <template>
   <div class="container">
+    <ContextMenu
+      v-model="displayBookContextMenu"
+      v-if="displayBookContextMenu"
+      :x="displayBookContextMenu.x"
+      :y="displayBookContextMenu.y"
+    >
+      <ContextMenuItem
+        @click="removeAnnotation(displayBookContextMenu.annotation)"
+        :icon="IconTrash"
+      >
+        Delete
+      </ContextMenuItem>
+    </ContextMenu>
     <div
       class="readerArea"
       :class="{ containerExpanded: expandedToc }"
@@ -49,25 +62,14 @@
       </book-view>
 
       <!-- color picker displayed when user selects text -->
-      <div
-        v-if="colorPicker.show"
-        class="highlight-color-picker"
-        :style="{ left: colorPicker.x + 'px', top: colorPicker.y + 'px' }"
-      >
+      <div v-if="colorPicker.show" class="choose-annotation-category">
         <button
-          class="picker-btn picker-yellow"
-          @click="chooseHighlight('yellow')"
+          v-for="category in Object.keys(ANNOTATION_CATEGORIES)"
+          class="picker-btn"
+          @click="chooseHighlight(category)"
+          :style="{ background: ANNOTATION_CATEGORIES[category].color }"
         >
-          Yellow
-        </button>
-        <button
-          class="picker-btn picker-green"
-          @click="chooseHighlight('green')"
-        >
-          Green
-        </button>
-        <button class="picker-btn picker-cancel" @click="cancelHighlight()">
-          ×
+          {{ category }}
         </button>
       </div>
 
@@ -123,12 +125,12 @@
             <div
               v-for="annotation of annotations[chapter]"
               class="annotationCard"
+              @contextmenu.prevent="openContextMenu($event, annotation)"
             >
               <div
                 class="annotationCardColor"
                 :style="{
-                  background:
-                    annotation.category === 'green' ? '#00c800' : '#ffff00',
+                  background: ANNOTATION_CATEGORIES[annotation.category].color,
                 }"
               />
               {{ annotation.text }}
@@ -215,13 +217,46 @@ import {
   getCurrentInstance,
   Transition,
   h as _h,
+  toRaw,
 } from 'vue'
 import { get_uuid } from '../../lib'
 import IconBookRead from '../../../public/icons/eye-svgrepo-com.svg'
 import IconPen from '../../../public/icons/pen-square-svgrepo-com.svg'
 import IconBook from '../../../public/icons/book-svgrepo-com.svg'
+import IconTrash from '../../../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
+import { ANNOTATION_CATEGORIES } from '../../constants.ts'
+import ContextMenu from '../../components/ContextMenu.vue'
+import ContextMenuItem from '../../components/ContextMenuItem.vue'
 
 const current = ref(0)
+const displayBookContextMenu = ref(null)
+
+function openContextMenu(event, annotation) {
+  displayBookContextMenu.value = {
+    annotation,
+    x: event.clientX,
+    y: event.clientY,
+  }
+}
+
+function closeContextMenu() {
+  displayBookContextMenu.value = null
+}
+
+function removeAnnotation(annotation) {
+  const resolvedAnnotation = toRaw(annotation)
+  closeContextMenu()
+  const annotations = []
+  for (let anno of userHighlights[resolvedAnnotation.index]) {
+    if (anno.uuid === resolvedAnnotation.uuid) {
+      continue
+    }
+    annotations.push(toRaw(anno))
+  }
+  userHighlights[resolvedAnnotation.index] = annotations
+  props.onAnnotationUpdated(['delete', resolvedAnnotation], userHighlights)
+  highlightFromUserHighlight(resolvedAnnotation, true)
+}
 
 function redrawUserHighlights(section) {
   for (let highlight of userHighlights[section] || []) {
@@ -450,8 +485,6 @@ let rendition = null
 // transient color picker state
 const colorPicker = reactive({
   show: false,
-  x: 0,
-  y: 0,
   range: null,
   index: null,
   doc: null,
@@ -527,25 +560,18 @@ const onGetRendition = (val) => {
         if (content.__ft_sel_attached) return
         content.__ft_sel_attached = true
         const doc = content.doc
-        doc.addEventListener('mouseup', (e) => {
+        doc.addEventListener('selectionchange', (e) => {
           try {
             const sel = doc.getSelection()
-            if (!sel || sel.isCollapsed || sel.rangeCount === 0) return
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+              cancelHighlight()
+              return
+            }
             const range = sel.getRangeAt(0)
             if (!range || String(sel).trim() === '') return
             const idx = content.index
             const cfi =
               typeof val.getCFI === 'function' ? val.getCFI(idx, range) : null
-            // position within the reader area
-            console.log('VAL', content)
-            const container = document.querySelector('.readerArea')
-            const rect = container?.getBoundingClientRect?.() || {
-              left: 0,
-              top: 0,
-            }
-            console.log('EVT', e)
-            colorPicker.x = Math.max(8, e.clientX - rect.left)
-            colorPicker.y = Math.max(8, e.clientY - rect.top)
             colorPicker.range = range
             colorPicker.index = idx
             colorPicker.doc = doc
@@ -613,7 +639,7 @@ const chooseHighlight = (category) => {
 
 // Accepts an entry from userHighlights: { cfi, index, category, text? }
 // Returns true if the overlay highlight was added successfully
-function highlightFromUserHighlight(entry) {
+function highlightFromUserHighlight(entry, remove) {
   try {
     if (!entry || !entry.cfi || !rendition) return false
     const resolved =
@@ -630,8 +656,12 @@ function highlightFromUserHighlight(entry) {
     // if (!(range instanceof Range)) return false
     const key = entry.cfi
     // map our simple color names to solid colors (opacity handled by Overlayer)
-    const color = entry.category === 'green' ? '#00c800' : '#ffff00'
-    content.overlayer.add(key, range, Overlayer.highlight, { color })
+    const color = ANNOTATION_CATEGORIES[entry.category].color
+    if (remove) {
+      content.overlayer.remove(key)
+    } else {
+      content.overlayer.add(key, range, Overlayer.highlight, { color })
+    }
     return true
   } catch (e) {
     console.warn('Failed to overlay highlight from entry:', e)
@@ -990,16 +1020,19 @@ const setLocation = (href, close = true) => {
 }
 
 /* selection color picker */
-.highlight-color-picker {
-  position: absolute;
+.choose-annotation-category {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   z-index: 1000;
   background: rgba(40, 40, 40, 0.95);
-  color: white;
-  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   padding: 4px;
   display: flex;
   gap: 4px;
+  font-weight: bold;
+  box-sizing: border-box;
 }
 .picker-btn {
   border: none;
@@ -1007,15 +1040,7 @@ const setLocation = (href, close = true) => {
   padding: 4px 6px;
   cursor: pointer;
   font-size: 12px;
-}
-.picker-yellow {
-  background: #ffe766;
-}
-.picker-green {
-  background: #6ee57b;
-}
-.picker-cancel {
-  background: #555;
-  color: #eee;
+  font-weight: bold;
+  flex-grow: 1;
 }
 </style>

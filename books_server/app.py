@@ -255,14 +255,21 @@ def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_curren
     elif data.update_type == "update-read-status":
         current_user.library.set_custom_value(book_id, "fxtl_is_read", str(data["fxtl_is_read"]))
     elif data.update_type == "update-annotations":
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            data_path = current_user.library.get_book_path(data.book_uuid)
-            annotations_path = data_path / "data" / "annotations.jsonl"
-            with annotations_path.open("a") as annotations_path:
-                for operation, entry in data.update_data:
-                    if operation == "add":
-                        annotations_path.write(f"{json.dumps(entry)}\n")
-
+        data_path = current_user.library.get_book_path(data.book_uuid)
+        annotations_path = data_path / "data" / "annotations.json"
+        try:
+            annotations = json.loads(annotations_path.read_text())
+        except FileNotFoundError:
+            annotations = {}
+        for operation, entry in data.update_data:
+            if operation == "add":
+                annotations[entry["uuid"]] = entry
+            elif operation == "delete":
+                try:
+                    annotations.pop(entry["uuid"])
+                except KeyError:
+                    pass
+        annotations_path.write_text(json.dumps(annotations))
 
 @app.get("/get_book")
 def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):

@@ -352,12 +352,12 @@ class CalibreDb:
 
     def get_book_annotations(self, book_uuid: str) -> list["_Annotation"]:
         path = self.get_book_path(book_uuid)
-        annotations_file = path / "data" / "annotations.jsonl"
+        annotations_file = path / "data" / "annotations.json"
         if not annotations_file.exists():
             return []
         annotations = []
-        for line in annotations_file.read_text().splitlines(keepends=False):
-            annotations.append(_Annotation(**json.loads(line)))
+        for entry in json.loads(annotations_file.read_text()).values():
+            annotations.append(_Annotation(**entry))
         return annotations
 
 
