@@ -313,14 +313,17 @@ def search_book(current_user: Annotated[ActiveUserData, Depends(get_current_user
 
 def _run_threaded(func: Callable, search_query: str, result_list: list[SearchedBook]):
     t0 = time.time()
-    result_list += func(search_query)
+    try:
+        result_list += func(search_query)
+    except Exception:
+        traceback.print_exc()
     print(f"Calling {func.__name__} in {time.time() - t0:.2f} seconds")
 
 
 @functools.lru_cache(maxsize=10)
 def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
     query = search_query.replace(" ", "+")
-    response = requests.get(f"https://annas-archive.in/search?index=&page=1&sort=&display=&q={query}")
+    response = requests.get(f"https://annas-archive.li/search?index=&page=1&sort=&display=&q={query}")
     b = bs4.BeautifulSoup(response.content, features="html.parser")
     results = [c for c in b.find_all(class_="js-aarecord-list-outer")[0].children if c.name == "div"]
 
