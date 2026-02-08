@@ -500,8 +500,8 @@ const getCSS = ({ justify, hyphenate }) => `
         color: ${styles.value.color} !important;
     }
     body {
-        font-size: ${styles.value.fontSize}% !important;
-        color: ${styles.value.color} !important;
+        font-size: inherit !important;
+        color: inherit !important;
       }
     /* https://github.com/whatwg/html/issues/5426 */
     @media (prefers-color-scheme: dark) {
