@@ -142,31 +142,31 @@
           <div class="buttonBar">
             <span>Font size</span>
             <button
-              @click="increaseFontSize"
+              @click="reduceFontSize"
               style="border-top-right-radius: 0; border-bottom-right-radius: 0"
             >
-              +
+              -
             </button>
             <button
-              @click="reduceFontSize"
+              @click="increaseFontSize"
               style="border-top-left-radius: 0; border-bottom-left-radius: 0"
             >
-              -
+              +
             </button>
           </div>
           <div class="buttonBar">
             <span>Spacing</span>
             <button
-              @click="increaseSpacing"
+              @click="reduceSpacing"
               style="border-top-right-radius: 0; border-bottom-right-radius: 0"
             >
-              +
+              -
             </button>
             <button
-              @click="reduceSpacing"
+              @click="increaseSpacing"
               style="border-top-left-radius: 0; border-bottom-left-radius: 0"
             >
-              -
+              +
             </button>
           </div>
           <div class="style-list">
@@ -496,9 +496,13 @@ const getCSS = ({ justify, hyphenate }) => `
     @namespace epub "http://www.idpf.org/2007/ops";
     html {
         color-scheme: light;
-        font-size: ${styles.value.fontSize}%;
+        font-size: ${styles.value.fontSize}% !important;
         color: ${styles.value.color} !important;
     }
+    body {
+        font-size: ${styles.value.fontSize}% !important;
+        color: ${styles.value.color} !important;
+      }
     /* https://github.com/whatwg/html/issues/5426 */
     @media (prefers-color-scheme: dark) {
         a:link {
