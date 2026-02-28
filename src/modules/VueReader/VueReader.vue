@@ -542,6 +542,8 @@ const getCSS = ({ justify, hyphenate }) => `
     }
 `
 
+let selectionEndTimeout = null
+
 const onGetRendition = (val) => {
   getRendition && getRendition(val)
   const { book } = val
@@ -564,8 +566,37 @@ const onGetRendition = (val) => {
         if (content.__ft_sel_attached) return
         content.__ft_sel_attached = true
         const doc = content.doc
+        doc.addEventListener(
+          'selectstart',
+          (event) => {
+            // console.log('selectstart')
+            const targetNode = document.querySelector('.container')
+            const sourceLeft = targetNode.scrollLeft
+            targetNode.style.overflow = 'auto'
+            targetNode.addEventListener(
+              'scroll',
+              (event2) => {
+                // console.log('scroll', event2.target.scrollLeft)
+                targetNode.style.overflow = 'hidden'
+                var selection = this.window.getSelection()
+                //var r = selection.getRangeAt(0);
+                selection.removeAllRanges()
+                targetNode.scrollLeft = sourceLeft
+              },
+              { capture: false, once: true },
+            )
+          },
+          { passive: true },
+        )
         doc.addEventListener('selectionchange', (e) => {
           try {
+            if (selectionEndTimeout) {
+              clearTimeout(selectionEndTimeout)
+            }
+            selectionEndTimeout = setTimeout(() => {
+              const targetNode = document.querySelector('.container')
+              targetNode.style.overflow = 'hidden'
+            }, 2000)
             const sel = doc.getSelection()
             if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
               cancelHighlight()

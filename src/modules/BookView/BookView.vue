@@ -13,7 +13,7 @@
 //https://github.com/johnfactotum/foliate-js
 //https://github.com/johnfactotum/foliate
 import '../utils/foliatejs/view.js'
-import "core-js/proposals/array-grouping-v2"
+import 'core-js/proposals/array-grouping-v2'
 import {
   clickListener,
   swipListener,
@@ -33,7 +33,7 @@ const props = defineProps({
   getRendition: Function,
   style: {
     type: Object,
-  }
+  },
 })
 
 const { tocChanged, getRendition } = props
@@ -63,11 +63,11 @@ const initBook = async () => {
 const initReader = () => {
   isLoaded.value = true
   const { book } = view
-  view.renderer.setAttribute("exportsparts", "filter")
+  view.renderer.setAttribute('exportsparts', 'filter')
   registerEvents()
   getRendition(view)
   tocChanged && tocChanged(book.toc)
-  if (typeof location.value === "number") {
+  if (typeof location.value === 'number') {
     view.goToFraction(location.value)
   } else if (location.value) {
     view?.goTo(location.value)
