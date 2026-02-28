@@ -40,19 +40,61 @@
       style="
         display: flex;
         padding: 1rem 1rem 0;
-        align-items: center;
+        align-items: stretch;
         position: relative;
+        flex-direction: column;
       "
     >
-      <input
-        ref="search-field"
-        v-on:keyup.enter="applyFilter"
-        class="search-field"
-        type="text"
-        placeholder="Filter..."
-      />
-      <div @click="applyFilter" class="search-field-btn">
-        <IconSearch />
+      <div style="display: flex; flex-grow: 1">
+        <div style="flex-grow: 1; position: relative; display: flex">
+          <input
+            ref="search-field"
+            v-on:keyup.enter="applyFilter"
+            class="search-field"
+            type="text"
+            placeholder="Filter..."
+          />
+          <div @click="applyFilter" class="search-field-btn">
+            <IconSearch />
+          </div>
+        </div>
+        <div
+          @click="displayFilterRow = !displayFilterRow"
+          class="filter-btn"
+          :class="{
+            'filter-btn-active': displayFilterRow,
+            'filter-btn-colored': showOnlyUnread,
+          }"
+          title="Show filter options"
+        >
+          <span
+            v-if="displayFilterRow"
+            style="
+              font-size: 1rem;
+              line-height: 1;
+              font-weight: 900;
+              color: #555;
+              transform: scale(1.3);
+            "
+          >
+            ×
+          </span>
+          <template v-else>
+            <IconFilterFilled v-if="showOnlyUnread" />
+            <IconFilter v-else />
+          </template>
+        </div>
+      </div>
+      <div v-if="displayFilterRow" class="filter-row">
+        <div class="filter-option" @click="toggleUnreadFilter">
+          <div class="option-left">
+            <IconEye class="icon" />
+            <span>Only Unread</span>
+          </div>
+          <div class="toggle-switch" :class="{ 'is-active': showOnlyUnread }">
+            <div class="toggle-handle"></div>
+          </div>
+        </div>
       </div>
     </div>
     <div style="overflow: hidden; position: relative; display: flex">
@@ -214,12 +256,17 @@ import { BookMeta } from './interfaces'
 import SidebarButton from './components/SidebarButton.vue'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
+import IconFilter from '../public/icons/filter-svgrepo-com.svg'
+import IconFilterFilled from '../public/icons/filter-filled-svgrepo-com.svg'
+import IconEye from '../public/icons/eye-svgrepo-com.svg'
 import { computeInitialFetchCount } from './lib'
 
 const bookContainer = useTemplateRef('book-container')
 const uploadBook = useTemplateRef('upload-book')
 const searchField = useTemplateRef('search-field')
 const selectedBook = ref<BookMeta | null>(null)
+const showOnlyUnread = ref(false)
+const displayFilterRow = ref(false)
 
 async function openDetails(book) {
   displayBookContextMenu.value = null
@@ -271,6 +318,11 @@ function openContextMenu(event: MouseEvent, book: any) {
   contextMenuX.value = event.clientX
   contextMenuY.value = event.clientY
   displayBookContextMenu.value = book
+}
+
+function toggleUnreadFilter() {
+  showOnlyUnread.value = !showOnlyUnread.value
+  applyFilter()
 }
 
 async function uploadFile(event: Event) {
@@ -510,11 +562,14 @@ const LIBRARY_DEFAULT_FILTER = `not #fxtl_tags:"=wishlist"`
 
 function applyFilter() {
   const searchValue = searchField.value!.value
+  let filter = LIBRARY_DEFAULT_FILTER
   if (searchValue) {
-    loadBooks(0, `${searchValue} and not #fxtl_tags:"=wishlist"`, true, true)
-  } else {
-    loadBooks(0, LIBRARY_DEFAULT_FILTER, true, true)
+    filter = `${searchValue} and ${LIBRARY_DEFAULT_FILTER}`
   }
+  if (showOnlyUnread.value) {
+    filter = `${filter} and #fxtl_is_read:"no"`
+  }
+  loadBooks(0, filter, true, true)
 }
 
 const BOOKS_TO_PREFETCH = 10
@@ -764,7 +819,6 @@ onMounted(async () => {
 
 .search-field-btn {
   height: 100%;
-  padding: 5px;
   position: absolute;
   right: 0;
   transform: translate(-75%, 0);
@@ -777,6 +831,102 @@ onMounted(async () => {
 .search-field-btn svg {
   width: 1em;
   height: 1em;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: #777;
+  border: 1px solid var(--book-border);
+  border-radius: 5px;
+  background: white;
+  transition: all 0.2s ease;
+  width: 1.2rem;
+}
+
+.filter-btn:hover {
+  background: #f5f5f5;
+  color: var(--primary);
+}
+
+.filter-btn-colored {
+  color: var(--primary);
+}
+
+.filter-btn-active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.filter-row {
+  display: flex;
+  padding: 0.5rem 0;
+  gap: 1rem;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.filter-option:hover {
+  background: #f0f0f0;
+}
+
+.option-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.option-left .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #555;
+}
+
+.toggle-switch {
+  width: 2.5rem;
+  height: 1.25rem;
+  background-color: #9f9f9f; /* Red for disabled */
+  border-radius: 1rem;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.toggle-switch.is-active {
+  background-color: #4caf50; /* Green for enabled */
+}
+
+.toggle-handle {
+  width: 1rem;
+  height: 1rem;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  transition: transform 0.2s;
+}
+
+.toggle-switch.is-active .toggle-handle {
+  transform: translateX(1.25rem);
+}
+
+.filter-btn svg {
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .libraries-loading-spinner {
