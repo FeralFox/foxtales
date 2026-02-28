@@ -14,6 +14,7 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: [
         'favicon.ico',
         'icons/logo.svg',
@@ -21,8 +22,12 @@ export default defineConfig({
         'icons/logo512.png',
       ],
       workbox: {
-        maximumFileSizeToCacheInBytes: 3000000,
-        globPatterns: ['**/*.{js,css,mjs,svg}'],
+        maximumFileSizeToCacheInBytes: 5000000,
+        globPatterns: ['**/*.{js,css,mjs,svg,html}'],
+        navigateFallback: 'index.html',
+      },
+      devOptions: {
+        enabled: true,
       },
       manifest: {
         name: 'Foxtales Ebook Library',
