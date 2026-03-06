@@ -323,7 +323,7 @@ def _run_threaded(func: Callable, search_query: str, result_list: list[SearchedB
 @functools.lru_cache(maxsize=10)
 def _search_book_annas_archive(search_query: str) -> list[SearchedBook]:
     query = search_query.replace(" ", "+")
-    response = requests.get(f"https://annas-archive.li/search?index=&page=1&sort=&display=&q={query}")
+    response = requests.get(f"https://annas-archive.gl/search?index=&page=1&sort=&display=&q={query}")
     b = bs4.BeautifulSoup(response.content, features="html.parser")
     results = [c for c in b.find_all(class_="js-aarecord-list-outer")[0].children if c.name == "div"]
 
