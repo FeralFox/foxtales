@@ -498,6 +498,7 @@ export class Paginator extends HTMLElement {
   #lastVisibleRange
   constructor() {
     super()
+    this.lockedScrollPosition = null
     this.#root.innerHTML = `<style>
         :host {
             display: block;
@@ -621,6 +622,25 @@ export class Paginator extends HTMLElement {
     this.addEventListener('touchmove', this.#onTouchMove.bind(this), opts)
     this.addEventListener('touchend', this.#onTouchEnd.bind(this))
     this.addEventListener('load', ({ detail: { doc } }) => {
+      this.#container.addEventListener(
+        'scroll',
+        (event) => {
+          if (this.lockedScrollPosition) {
+            const target = event.target
+            const el =
+              target instanceof HTMLElement ? target : target?.documentElement
+            if (
+              el &&
+              el.scrollLeft !== 0 &&
+              doc.getSelection() &&
+              doc.getSelection().type === 'Range'
+            ) {
+              el.scrollLeft = this.lockedScrollPosition
+            }
+          }
+        },
+        true,
+      )
       doc.addEventListener('touchstart', this.#onTouchStart.bind(this), opts)
       doc.addEventListener('touchmove', this.#onTouchMove.bind(this), opts)
       doc.addEventListener('touchend', this.#onTouchEnd.bind(this))
@@ -914,6 +934,9 @@ export class Paginator extends HTMLElement {
     })
   }
   #onTouchStart(e) {
+    if (!this.scrolled) {
+      this.lockedScrollPosition = this.#container.scrollLeft
+    }
     const touch = e.changedTouches[0]
     this.#touchState = {
       x: touch?.screenX,
@@ -948,6 +971,11 @@ export class Paginator extends HTMLElement {
     this.scrollBy(dx, dy)
   }
   #onTouchEnd() {
+    if (this.lockedScrollPosition) {
+      debounce(() => {
+        this.lockedScrollPosition = null
+      }, 500)
+    }
     this.#touchScrolled = false
     if (this.scrolled) return
 
