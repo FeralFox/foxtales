@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 
 import io
+import sqlite3
 import threading
 from typing import Optional
 
@@ -325,6 +326,21 @@ class CalibreDb:
     def get_book_metadata(self, book_id: int) -> FullBookMetadata:
         data = self.list_books(f"id:{book_id}")[0]
         return FullBookMetadata(**data.__dict__)
+
+    def get_all_tags(self) -> list[str]:
+        db_path = self._path / "metadata.db"
+        if not db_path.exists():
+            return []
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM tags")
+            tags = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return sorted(list(set(tags)))
+        except Exception as e:
+            logging.error(f"Failed to retrieve tags from database: {e}")
+            return []
 
     def wishlist_book(self, bookData: SearchedBook) -> int:
         with tempfile.TemporaryDirectory() as tmpdir_str:

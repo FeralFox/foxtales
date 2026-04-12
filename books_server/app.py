@@ -296,6 +296,11 @@ def set_data(current_user: Annotated[ActiveUserData, Depends(get_current_user)],
         lib.set_metadata(book_id, "authors", data.tags)
 
 
+@app.get("/get_tags")
+def get_tags(current_user: Annotated[ActiveUserData, Depends(get_current_user)]) -> list[str]:
+    return current_user.library.get_all_tags()
+
+
 @app.get("/get_book")
 def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):
     lib = current_user.library

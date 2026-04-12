@@ -106,7 +106,7 @@
     :buttons="[]"
     @action="() => {}"
     :onClose="closeDetails"
-    @update="() => {}"
+    @update="(newTags) => handleBookUpdate(selectedBook, newTags)"
   >
     <SidebarButton
       :icon="IconRemove"
@@ -145,6 +145,12 @@ async function openDetails(book) {
 
 function closeDetails() {
   selectedBook.value = null
+}
+
+function handleBookUpdate(book: BookMeta | null, newTags: string[]) {
+  if (book) {
+    book.tags = newTags
+  }
 }
 
 async function postAsync(url: string, data: object) {

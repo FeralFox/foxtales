@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import type { SearchedBook, BookMeta } from '../interfaces'
 import { authHeaders, URL } from '../constants'
 
@@ -130,8 +130,23 @@ watch(
 
 const isAddingTag = ref(false)
 const newTag = ref('')
-const existingTags = ['Manga', 'Sachbuch']
+const existingTags = ref<string[]>([])
 const tagInput = ref<HTMLInputElement | null>(null)
+
+async function fetchExistingTags() {
+  try {
+    const response = await fetch(`${URL}/get_tags`, {
+      headers: authHeaders(),
+    })
+    if (response.ok) {
+      existingTags.value = await response.json()
+    }
+  } catch (e) {
+    console.error('Failed to fetch existing tags:', e)
+  }
+}
+
+onMounted(fetchExistingTags)
 
 const isConfirmingRemoval = ref(false)
 const tagToRemove = ref('')
@@ -139,7 +154,7 @@ const tagToRemove = ref('')
 const filteredSuggestions = computed(() => {
   const query = newTag.value.trim().toLowerCase()
   if (!query) return []
-  return existingTags.filter((tag) => tag.toLowerCase().includes(query))
+  return existingTags.value.filter((tag) => tag.toLowerCase().includes(query))
 })
 
 function startAddTag() {
@@ -165,13 +180,17 @@ function handleEnterKey() {
 async function submitTag() {
   const tagToAdd = newTag.value.trim()
   if (!tagToAdd || !props.book) return
+  isAddingTag.value = false
 
   if (!currentTags.value.includes(tagToAdd)) {
     currentTags.value.push(tagToAdd)
     await updateTags(currentTags.value)
+    if (!existingTags.value.includes(tagToAdd)) {
+      existingTags.value.push(tagToAdd)
+      existingTags.value.sort()
+    }
   }
   newTag.value = ''
-  isAddingTag.value = false
 }
 
 function removeTag(tag: string) {
@@ -203,7 +222,7 @@ async function updateTags(newTags: string[]) {
       }),
     })
     if (response.ok) {
-      emit('update')
+      emit('update', newTags)
     }
   } catch (e) {
     console.error('Failed to update tags:', e)

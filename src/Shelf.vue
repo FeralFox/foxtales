@@ -95,6 +95,44 @@
             <div class="toggle-handle"></div>
           </div>
         </div>
+        <div class="filter-option tag-filter-option">
+          <div class="option-left">
+            <IconTag class="icon" />
+            <span>Tag:</span>
+          </div>
+          <div class="tag-input-container">
+            <input
+              v-model="tagSearch"
+              @focus="showTagSuggestions = true"
+              @blur="handleTagBlur"
+              @keyup.enter="
+                filteredTags.length > 0 ? selectTag(filteredTags[0]) : null
+              "
+              placeholder="Filter by tag..."
+              class="tag-filter-input"
+            />
+            <button
+              v-if="tagSearch"
+              @click="clearTagFilter"
+              class="clear-tag-btn"
+            >
+              ×
+            </button>
+            <div
+              v-if="showTagSuggestions && filteredTags.length > 0"
+              class="tag-suggestions"
+            >
+              <div
+                v-for="tag in filteredTags"
+                :key="tag"
+                @mousedown.prevent="selectTag(tag)"
+                class="tag-suggestion-item"
+              >
+                {{ tag }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div style="overflow: hidden; position: relative; display: flex">
@@ -201,7 +239,7 @@
     :buttons="[]"
     @action="() => {}"
     :onClose="closeDetails"
-    @update="() => {}"
+    @update="(newTags) => handleBookUpdate(selectedBook, newTags)"
   >
     <SidebarButton
       :icon="IconDownload"
@@ -234,7 +272,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, toRaw, useTemplateRef } from 'vue'
+import { computed, nextTick, onMounted, ref, toRaw, useTemplateRef } from 'vue'
 import {
   getKeysFromIndexedDb,
   loadFromBookDb,
@@ -260,6 +298,7 @@ import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconFilter from '../public/icons/filter-svgrepo-com.svg'
 import IconFilterFilled from '../public/icons/filter-filled-svgrepo-com.svg'
 import IconEye from '../public/icons/eye-svgrepo-com.svg'
+import IconTag from '../public/icons/tag-svgrepo-com.svg'
 import { computeInitialFetchCount } from './lib'
 
 const bookContainer = useTemplateRef('book-container')
@@ -269,6 +308,53 @@ const selectedBook = ref<BookMeta | null>(null)
 const showOnlyUnread = ref(false)
 const displayFilterRow = ref(false)
 
+const tagSearch = ref('')
+const selectedTag = ref('')
+const existingTags = ref<string[]>([])
+const showTagSuggestions = ref(false)
+
+async function fetchExistingTags() {
+  try {
+    const response = await fetch(`${URL}/get_tags`, {
+      headers: authHeaders(),
+    })
+    if (response.ok) {
+      const tags = await response.json()
+      existingTags.value = tags.sort((a, b) => a.localeCompare(b))
+    }
+  } catch (e) {
+    console.error('Failed to fetch existing tags:', e)
+  }
+}
+
+onMounted(() => {
+  fetchExistingTags()
+})
+
+const filteredTags = computed(() => {
+  const query = tagSearch.value.toLowerCase().trim()
+  if (!query) return existingTags.value
+  return existingTags.value.filter((tag) => tag.toLowerCase().includes(query))
+})
+
+function selectTag(tag: string) {
+  selectedTag.value = tag
+  tagSearch.value = tag
+  showTagSuggestions.value = false
+  applyFilter()
+}
+
+function clearTagFilter() {
+  selectedTag.value = ''
+  tagSearch.value = ''
+  showTagSuggestions.value = false
+  applyFilter()
+}
+
+function handleTagBlur() {
+  setTimeout(() => (showTagSuggestions.value = false), 200)
+}
+
 async function openDetails(book) {
   displayBookContextMenu.value = null
   selectedBook.value = book
@@ -276,6 +362,12 @@ async function openDetails(book) {
 
 function closeDetails() {
   selectedBook.value = null
+}
+
+function handleBookUpdate(book: BookMeta | null, newTags: string[]) {
+  if (book) {
+    book.tags = newTags
+  }
 }
 
 async function postAsync(url: string, data: object) {
@@ -566,6 +658,9 @@ function applyFilter() {
   let filter = SHELF_DEFAULT_FILTER
   if (searchValue) {
     filter = `${searchValue} and ${SHELF_DEFAULT_FILTER}`
+  }
+  if (selectedTag.value) {
+    filter = `${filter} and tags:"=${selectedTag.value}"`
   }
   if (showOnlyUnread.value) {
     filter = `${filter} and #fxtl_is_read:"no"`
@@ -868,6 +963,7 @@ onMounted(async () => {
   display: flex;
   padding: 0.5rem 0;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .filter-option {
@@ -878,6 +974,64 @@ onMounted(async () => {
   padding: 0.5rem;
   border-radius: 8px;
   transition: background 0.2s;
+}
+
+.tag-filter-option {
+  cursor: default;
+}
+
+.tag-filter-option:hover {
+  background: transparent;
+}
+
+.tag-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tag-filter-input {
+  padding: 0.25rem 1.5rem 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--book-border);
+  font-size: 0.9rem;
+  width: 150px;
+}
+
+.clear-tag-btn {
+  position: absolute;
+  right: 0.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #777;
+  line-height: 1;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--book-border);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tag-suggestion-item {
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tag-suggestion-item:hover {
+  background: #f0f0f0;
 }
 
 .filter-option:hover {
