@@ -5,8 +5,8 @@
     <a :class="props.active === 'local' ? 'is-active' : ''" href="#/"
       ><BookStackIcon class="logo" /> Local</a
     >
-    <a :class="props.active === 'library' ? 'is-active' : ''" href="#/lib"
-      ><LibraryIcon class="logo" />Library</a
+    <a :class="props.active === 'shelf' ? 'is-active' : ''" href="#/shelf"
+      ><ShelfIcon class="logo" />Shelf</a
     >
     <a :class="props.active === 'wishlist' ? 'is-active' : ''" href="#/wishlist"
       ><FavoritesIcon class="logo" />Wishlist</a
@@ -80,7 +80,7 @@
 import { computed } from 'vue'
 import Logo from '../public/icons/logo_dark.svg'
 import BookStackIcon from '../public/icons/books-stack-svgrepo-com.svg'
-import LibraryIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
+import ShelfIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
 import FavoritesIcon from '../public/icons/favorites-svgrepo-com.svg'
 import ExploreIcon from '../public/icons/explore-svgrepo-com.svg'
 

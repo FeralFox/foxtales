@@ -1,5 +1,5 @@
 <template>
-  <Navigation active="library" />
+  <Navigation active="shelf" />
   <ContextMenu
     v-model="displayBookContextMenu"
     v-if="displayBookContextMenu"
@@ -32,7 +32,7 @@
       @click="confirmRemoveBook(displayBookContextMenu!.uuid)"
       :icon="IconRemove"
     >
-      Remove from Library
+      Remove from Shelf
     </ContextMenuItem>
   </ContextMenu>
   <div style="width: 100%; display: flex; flex-direction: column">
@@ -169,8 +169,8 @@
   </div>
 
   <div v-if="showDeleteModal" class="modal" @click.stop>
-    <div style="font-weight: 600">Remove from Library</div>
-    <div>Are you sure you want to remove this book from your library?</div>
+    <div style="font-weight: 600">Remove from Shelf</div>
+    <div>Are you sure you want to remove this book from your Shelf?</div>
     <div
       style="
         display: flex;
@@ -226,7 +226,7 @@
     <SidebarButton
       :icon="IconRemove"
       @click="confirmRemoveBook(selectedBook!.uuid)"
-      title="Remove from Library"
+      title="Remove from Shelf"
     >
     </SidebarButton>
   </BookDetailsSidebar>
@@ -389,7 +389,7 @@ async function uploadFile(event: Event) {
         xhr.send(formData)
       })
 
-      await loadBooks(0, LIBRARY_DEFAULT_FILTER, false, true)
+      await loadBooks(0, SHELF_DEFAULT_FILTER, false, true)
     } catch (e: any) {
       console.error(e)
       uploadError.value = e?.message || 'Upload failed'
@@ -558,13 +558,13 @@ async function downloadBook(uuid: string) {
   }
 }
 
-const LIBRARY_DEFAULT_FILTER = `not #fxtl_tags:"=wishlist"`
+const SHELF_DEFAULT_FILTER = `not #fxtl_tags:"=wishlist"`
 
 function applyFilter() {
   const searchValue = searchField.value!.value
-  let filter = LIBRARY_DEFAULT_FILTER
+  let filter = SHELF_DEFAULT_FILTER
   if (searchValue) {
-    filter = `${searchValue} and ${LIBRARY_DEFAULT_FILTER}`
+    filter = `${searchValue} and ${SHELF_DEFAULT_FILTER}`
   }
   if (showOnlyUnread.value) {
     filter = `${filter} and #fxtl_is_read:"no"`
@@ -574,7 +574,7 @@ function applyFilter() {
 
 const BOOKS_TO_PREFETCH = 10
 const booksLoading = ref(false)
-let current_filter = LIBRARY_DEFAULT_FILTER
+let current_filter = SHELF_DEFAULT_FILTER
 
 async function preloadBooks(
   filter: string | undefined,
@@ -680,7 +680,7 @@ onMounted(async () => {
   await nextTick()
   loadBooks(
     0,
-    LIBRARY_DEFAULT_FILTER,
+    SHELF_DEFAULT_FILTER,
     true,
     true,
     computeInitialFetchCount(

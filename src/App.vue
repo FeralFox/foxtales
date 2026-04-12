@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import Library from './Library.vue'
+import Shelf from './Shelf.vue'
 import Book from './Book.vue'
 import OfflineLibrary from './OfflineLibrary.vue'
 import Login from './Login.vue'
@@ -31,7 +31,7 @@ const offlineRoutes = ['/', '/book', '/register', '/login']
 
 const routes: Record<string, any> = {
   '/': OfflineLibrary,
-  '/lib': Library,
+  '/lib': Shelf,
   '/login': Login,
   '/register': Register,
   '/wishlist': Wishlist,
