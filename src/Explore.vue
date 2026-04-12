@@ -84,6 +84,7 @@
       v-if="selectedBook"
       :book="selectedBook"
       :onClose="closeDetails"
+      @update="applyFilter"
     >
       <SidebarButton
         :icon="IconAddToWishlist"

@@ -31,7 +31,7 @@ const offlineRoutes = ['/', '/book', '/register', '/login']
 
 const routes: Record<string, any> = {
   '/': OfflineLibrary,
-  '/lib': Shelf,
+  '/shelf': Shelf,
   '/login': Login,
   '/register': Register,
   '/wishlist': Wishlist,

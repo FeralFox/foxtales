@@ -271,6 +271,31 @@ def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_curren
                     pass
         annotations_path.write_text(json.dumps(annotations))
 
+
+@dataclasses.dataclass
+class BookData:
+    book_uuid: str
+    title: str = ""
+    description: str = ""
+    tags: str = ""
+    authors: str = ""
+
+
+@app.post("/set_data")
+def set_data(current_user: Annotated[ActiveUserData, Depends(get_current_user)], data: BookData):
+    lib = current_user.library
+    book_id = lib.get_book_id_by_uuid(data.book_uuid)
+    if data.title:
+        lib.set_metadata(book_id, "title", data.title)
+    if data.description:
+        lib.set_metadata(book_id, "comments", data.description)
+    if data.tags:
+        tags = sorted(data.tags.split(","))
+        lib.set_metadata(book_id, "tags", ",".join(tags))
+    if data.authors:
+        lib.set_metadata(book_id, "authors", data.tags)
+
+
 @app.get("/get_book")
 def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):
     lib = current_user.library

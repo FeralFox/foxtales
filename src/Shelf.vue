@@ -201,6 +201,7 @@
     :buttons="[]"
     @action="() => {}"
     :onClose="closeDetails"
+    @update="() => {}"
   >
     <SidebarButton
       :icon="IconDownload"
