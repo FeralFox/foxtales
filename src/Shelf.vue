@@ -2,7 +2,6 @@
   <Navigation active="shelf" />
   <ContextMenu
     v-model="displayBookContextMenu"
-    v-if="displayBookContextMenu"
     :x="contextMenuX"
     :y="contextMenuY"
     :title="displayBookContextMenu?.title"
@@ -16,7 +15,7 @@
     <ContextMenuItem
       @click="downloadBook(displayBookContextMenu!.uuid)"
       :icon="IconDownload"
-      :disabled="localBooks.includes(displayBookContextMenu.uuid.toString())"
+      :disabled="localBooks.includes(displayBookContextMenu!.uuid.toString())"
     >
       Download to Device
     </ContextMenuItem>
@@ -84,6 +83,16 @@
             <IconFilter v-else />
           </template>
         </div>
+        <div
+          @click="toggleListView"
+          class="filter-btn"
+          :class="{ 'filter-btn-active': isListView }"
+          title="Toggle list/grid view"
+          style="margin-left: 0.5rem"
+        >
+          <IconList v-if="!isListView" />
+          <IconGrid v-if="isListView" />
+        </div>
       </div>
       <div v-if="displayFilterRow" class="filter-row">
         <div class="filter-option" @click="toggleUnreadFilter">
@@ -135,7 +144,7 @@
         </div>
         <div class="filter-option tag-filter-option">
           <div class="option-left">
-            <IconTag class="icon" />
+            <IconAuthor class="icon" />
             <span>Author:</span>
           </div>
           <div class="tag-input-container">
@@ -176,9 +185,21 @@
       </div>
     </div>
     <div style="overflow: hidden; position: relative; display: flex">
-      <div style="overflow: auto" @scroll="onScroll" ref="book-container">
-        <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
-          <div class="book_card" ref="upload-book">
+      <div
+        style="overflow: auto; flex-grow: 1"
+        @scroll="onScroll"
+        ref="book-container"
+      >
+        <div
+          style="display: flex; flex-wrap: wrap; align-content: flex-start"
+          :class="{ 'list-view': isListView }"
+        >
+          <div
+            class="book_card"
+            ref="upload-book"
+            :class="{ 'list-item': isListView }"
+            v-if="!isListView"
+          >
             <div class="upload-book">
               <IconAddBook class="add-book-icon" />
               <div v-if="!isUploading">Upload Book</div>
@@ -210,6 +231,7 @@
             @click="openDetails(book)"
             @contextmenu.prevent="openContextMenu($event, book)"
             style="cursor: pointer; position: relative"
+            :class="{ 'list-item': isListView }"
           >
             <div
               v-if="downloadingId === book.uuid"
@@ -236,6 +258,7 @@
                 localBooks.includes(book.uuid.toString())
               "
               :image="covers[book.uuid] ? `url(${covers[book.uuid]})` : ''"
+              :is-list-view="isListView"
             />
           </div>
         </div>
@@ -339,6 +362,9 @@ import IconFilter from '../public/icons/filter-svgrepo-com.svg'
 import IconFilterFilled from '../public/icons/filter-filled-svgrepo-com.svg'
 import IconEye from '../public/icons/eye-svgrepo-com.svg'
 import IconTag from '../public/icons/tag-svgrepo-com.svg'
+import IconAuthor from '../public/icons/author-svgrepo-com.svg'
+import IconList from '../public/icons/list-svgrepo-com.svg'
+import IconGrid from '../public/icons/grid-svgrepo-com.svg'
 import { computeInitialFetchCount } from './lib'
 
 const bookContainer = useTemplateRef('book-container')
@@ -346,6 +372,7 @@ const uploadBook = useTemplateRef('upload-book')
 const searchField = useTemplateRef('search-field')
 const selectedBook = ref<BookMeta | null>(null)
 const showOnlyUnread = ref(false)
+const isListView = ref(localStorage.getItem('isListView') === 'true')
 const displayFilterRow = ref(false)
 
 const tagSearch = ref('')
@@ -501,6 +528,11 @@ function openContextMenu(event: MouseEvent, book: any) {
 function toggleUnreadFilter() {
   showOnlyUnread.value = !showOnlyUnread.value
   applyFilter()
+}
+
+function toggleListView() {
+  isListView.value = !isListView.value
+  localStorage.setItem('isListView', isListView.value.toString())
 }
 
 async function uploadFile(event: Event) {
@@ -988,10 +1020,15 @@ onMounted(async () => {
   mask-composite: exclude; /* for some browsers; harmless where unsupported */
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.book_card.list-item {
+  width: 100%;
+  margin: 0;
+  height: auto;
+}
+
+.list-view {
+  flex-direction: column;
+  width: 100%;
 }
 
 .search-field {
@@ -1029,7 +1066,7 @@ onMounted(async () => {
   border-radius: 5px;
   background: white;
   transition: all 0.2s ease;
-  width: 1.2rem;
+  min-width: 1.2rem;
 }
 
 .filter-btn:hover {
@@ -1188,6 +1225,15 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   z-index: 1;
+}
+.list-item {
+  width: calc(100% - 1rem);
+  transition: 0.2s ease-in-out;
+  border-radius: 5px;
+  margin: 0.5rem;
+}
+.list-item:hover {
+  background-color: var(--list-item-bg);
 }
 
 @media (max-width: 640px) {

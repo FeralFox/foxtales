@@ -19,24 +19,40 @@
       Remove from Wishlist
     </ContextMenuItem>
   </ContextMenu>
+
   <div style="width: 100%; display: flex; flex-direction: column">
     <div
       style="
         display: flex;
         padding: 1rem 1rem 0;
-        align-items: center;
+        align-items: stretch;
         position: relative;
+        flex-direction: column;
       "
     >
-      <input
-        ref="search-field"
-        v-on:keyup.enter="applyFilter"
-        class="search-field"
-        type="text"
-        placeholder="Filter..."
-      />
-      <div @click="applyFilter" class="search-field-btn">
-        <IconSearch />
+      <div style="display: flex; flex-grow: 1">
+        <div style="flex-grow: 1; position: relative; display: flex">
+          <input
+            ref="search-field"
+            v-on:keyup.enter="applyFilter"
+            class="search-field"
+            type="text"
+            placeholder="Filter..."
+          />
+          <div @click="applyFilter" class="search-field-btn">
+            <IconSearch />
+          </div>
+        </div>
+        <div
+          @click="toggleListView"
+          class="filter-btn"
+          :class="{ 'filter-btn-active': isListView }"
+          title="Toggle list/grid view"
+          style="margin-left: 0.5rem"
+        >
+          <IconList v-if="!isListView" />
+          <IconGrid v-if="isListView" />
+        </div>
       </div>
     </div>
     <div
@@ -47,14 +63,26 @@
         min-height: 15rem;
       "
     >
-      <div style="overflow: auto" @scroll="onScroll" ref="book-container">
-        <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
-          <div class="book_card" ref="book-size-reference"></div>
+      <div
+        style="overflow: auto; flex-grow: 1"
+        @scroll="onScroll"
+        ref="book-container"
+      >
+        <div
+          style="display: flex; flex-wrap: wrap; align-content: flex-start"
+          :class="{ 'list-view': isListView }"
+        >
+          <div
+            class="book_card"
+            ref="book-size-reference"
+            v-if="!isListView"
+          ></div>
           <div
             v-for="book in books"
             :key="book.uuid"
             @contextmenu.prevent="openContextMenu($event, book)"
             style="cursor: pointer; position: relative"
+            :class="{ 'list-item': isListView }"
           >
             <BookCoverThumbnail
               :book="book"
@@ -63,6 +91,7 @@
                 localBooks.includes(book.uuid.toString())
               "
               :image="covers[book.uuid] ? `url(${covers[book.uuid]})` : ''"
+              :is-list-view="isListView"
             />
           </div>
         </div>
@@ -131,12 +160,22 @@ import { BookMeta } from './interfaces'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import SidebarButton from './components/SidebarButton.vue'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
+import IconList from '../public/icons/list-svgrepo-com.svg'
+import IconGrid from '../public/icons/grid-svgrepo-com.svg'
 import { computeInitialFetchCount } from './lib'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
 const hiddenBookTile = useTemplateRef('book-size-reference')
 const selectedBook = ref<BookMeta | null>(null)
+const isListView = ref(localStorage.getItem('isListView') === 'true')
+
+async function toggleListView() {
+  isListView.value = !isListView.value
+  localStorage.setItem('isListView', isListView.value.toString())
+  await nextTick()
+  hiddenBookTile.value!.style.display = 'none'
+}
 
 async function openDetails(book) {
   displayBookContextMenu.value = null
@@ -229,7 +268,11 @@ function cancelRemoveBook() {
 
 function applyFilter() {
   const searchValue = searchField.value!.value
-  loadBooks(0, `#fxtl_tags:"=wishlist" and ${searchValue}`, true, true)
+  if (searchValue) {
+    loadBooks(0, `#fxtl_tags:"=wishlist" and ${searchValue}`, true, true)
+  } else {
+    loadBooks(0, `#fxtl_tags:"=wishlist"`, true, true)
+  }
 }
 
 const BOOKS_TO_PREFETCH = 10
@@ -339,12 +382,17 @@ let current_filter = DEFAULT_FILTER
 onMounted(async () => {
   // Ensure DOM is ready to measure tile and container sizes
   await nextTick()
-  let booksToDisplay = computeInitialFetchCount(
-    hiddenBookTile.value,
-    bookContainer.value,
-    BOOKS_TO_PREFETCH,
-  )
-  hiddenBookTile.value!.style.display = 'none'
+  let booksToDisplay
+  try {
+    booksToDisplay = computeInitialFetchCount(
+      hiddenBookTile.value,
+      bookContainer.value,
+      BOOKS_TO_PREFETCH,
+    )
+    hiddenBookTile.value!.style.display = 'none'
+  } catch (e) {
+    booksToDisplay = 30
+  }
   loadBooks(0, DEFAULT_FILTER, true, true, booksToDisplay)
 })
 </script>
@@ -366,6 +414,17 @@ onMounted(async () => {
   }
 }
 
+.book_card.list-item {
+  width: 100%;
+  margin: 0;
+  height: auto;
+}
+
+.list-view {
+  flex-direction: column;
+  width: 100%;
+}
+
 .search-field {
   flex-grow: 1;
   padding: 0.5rem;
@@ -375,7 +434,6 @@ onMounted(async () => {
 
 .search-field-btn {
   height: 100%;
-  padding: 5px;
   position: absolute;
   right: 0;
   transform: translate(-75%, 0);
@@ -388,6 +446,37 @@ onMounted(async () => {
 .search-field-btn svg {
   width: 1em;
   height: 1em;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: #777;
+  border: 1px solid var(--book-border);
+  border-radius: 5px;
+  background: white;
+  transition: all 0.2s ease;
+  min-width: 1.2rem;
+}
+
+.filter-btn:hover {
+  background: #f5f5f5;
+  color: var(--primary);
+}
+
+.filter-btn-active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.filter-btn svg {
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .libraries-loading-spinner {
@@ -407,5 +496,19 @@ onMounted(async () => {
   .libraries-loading-spinner {
     margin-left: 1rem;
   }
+}
+.list-item {
+  width: calc(100% - 1rem);
+  transition: 0.2s ease-in-out;
+  border-radius: 5px;
+  margin: 0.5rem;
+}
+.list-item:hover {
+  background-color: var(--list-item-bg);
+}
+
+.search-field-btn svg {
+  width: 1em;
+  height: 1em;
 }
 </style>

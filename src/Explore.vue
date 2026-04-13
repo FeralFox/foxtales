@@ -24,19 +24,34 @@
       style="
         display: flex;
         padding: 1rem 1rem 0;
-        align-items: center;
+        align-items: stretch;
         position: relative;
+        flex-direction: column;
       "
     >
-      <input
-        ref="search-field"
-        v-on:keyup.enter="applyFilter"
-        class="search-field"
-        type="text"
-        placeholder="search title, author or ISBN..."
-      />
-      <div @click="applyFilter" class="search-field-btn">
-        <IconSearch />
+      <div style="display: flex; flex-grow: 1">
+        <div style="flex-grow: 1; position: relative; display: flex">
+          <input
+            ref="search-field"
+            v-on:keyup.enter="applyFilter"
+            class="search-field"
+            type="text"
+            placeholder="Filter..."
+          />
+          <div @click="applyFilter" class="search-field-btn">
+            <IconSearch />
+          </div>
+        </div>
+        <div
+          @click="toggleListView"
+          class="filter-btn"
+          :class="{ 'filter-btn-active': isListView }"
+          title="Toggle list/grid view"
+          style="margin-left: 0.5rem"
+        >
+          <IconList v-if="!isListView" />
+          <IconGrid v-if="isListView" />
+        </div>
       </div>
     </div>
     <!-- Recent searches chips -->
@@ -59,18 +74,23 @@
         min-height: 15rem;
       "
     >
-      <div style="overflow: auto" ref="book-container">
-        <div style="display: flex; flex-wrap: wrap; align-content: flex-start">
+      <div style="overflow: auto; flex-grow: 1" ref="book-container">
+        <div
+          style="display: flex; flex-wrap: wrap; align-content: flex-start"
+          :class="{ 'list-view': isListView }"
+        >
           <div
             v-for="book in books"
             :key="book.uuid"
             @contextmenu.prevent="openContextMenu($event, book)"
             @click="openDetails(book)"
             style="cursor: pointer; position: relative"
+            :class="{ 'list-item': isListView }"
           >
             <BookCoverThumbnail
               :book="book"
               :image="`url(${book.cover_url})`"
+              :is-list-view="isListView"
             />
           </div>
         </div>
@@ -125,6 +145,8 @@ import { SearchedBook } from './interfaces'
 import IconAddToWishlist from '../public/icons/add-to-wishlist-svgrepo-com.svg'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconChecked from '../public/icons/check-square-svgrepo-com.svg'
+import IconList from '../public/icons/list-svgrepo-com.svg'
+import IconGrid from '../public/icons/grid-svgrepo-com.svg'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import SidebarButton from './components/SidebarButton.vue'
 
@@ -194,6 +216,12 @@ const contextMenuY = ref(0)
 const itemOnWishlist = ref(0)
 
 const selectedBook = ref<SearchedBook | null>(null)
+const isListView = ref(localStorage.getItem('isListView') === 'true')
+
+function toggleListView() {
+  isListView.value = !isListView.value
+  localStorage.setItem('isListView', isListView.value.toString())
+}
 
 function openDetails(book: SearchedBook) {
   displayBookContextMenu.value = null
@@ -263,6 +291,17 @@ onMounted(() => {
   }
 }
 
+.book_card.list-item {
+  width: 100%;
+  margin: 0;
+  height: auto;
+}
+
+.list-view {
+  flex-direction: column;
+  width: 100%;
+}
+
 .search-field {
   flex-grow: 1;
   padding: 0.5rem;
@@ -272,7 +311,6 @@ onMounted(() => {
 
 .search-field-btn {
   height: 100%;
-  padding: 5px;
   position: absolute;
   right: 0;
   transform: translate(-75%, 0);
@@ -285,6 +323,37 @@ onMounted(() => {
 .search-field-btn svg {
   width: 1em;
   height: 1em;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: #777;
+  border: 1px solid var(--book-border);
+  border-radius: 5px;
+  background: white;
+  transition: all 0.2s ease;
+  min-width: 1.2rem;
+}
+
+.filter-btn:hover {
+  background: #f5f5f5;
+  color: var(--primary);
+}
+
+.filter-btn-active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.filter-btn svg {
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .recent-searches {
@@ -360,5 +429,19 @@ onMounted(() => {
   .libraries-loading-spinner {
     margin-left: 1rem;
   }
+}
+.list-item {
+  width: calc(100% - 1rem);
+  transition: 0.2s ease-in-out;
+  border-radius: 5px;
+  margin: 0.5rem;
+}
+.list-item:hover {
+  background-color: var(--list-item-bg);
+}
+
+.search-field-btn svg {
+  width: 1em;
+  height: 1em;
 }
 </style>

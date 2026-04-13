@@ -1,27 +1,39 @@
 <template>
-  <div class="book_card" :title="book!.title">
+  <div
+    class="book_card"
+    :class="{ 'is-list-view': isListView }"
+    :title="book!.title"
+  >
     <div
       class="book-cover"
+      :class="{ 'is-list-view': isListView }"
       :style="{
         backgroundImage: image,
       }"
     >
-      <div class="book-cover-toolbar">
-        <div>109</div>
+      <div class="book-cover-toolbar" v-if="!isListView">
         <div v-if="book!.fxtl_is_read" title="Book read"><IconBookRead /></div>
         <div v-if="displayBookDownloadedIcon" title="Saved on device">
           <IconDownloadSmall />
         </div>
       </div>
     </div>
-    <div class="full-title">
-      <div class="episode-title">{{ truncated_title.title }}</div>
-      <div v-if="truncated_title.episode" class="episode-label">
-        {{ truncated_title.episode }}
+    <div class="book-info-container">
+      <div class="full-title" :class="{ 'is-list-view': isListView }">
+        <div class="episode-title">{{ truncated_title.title }}</div>
+        <div v-if="truncated_title.episode" class="episode-label">
+          {{ truncated_title.episode }}
+        </div>
       </div>
-    </div>
-    <div class="authors-label">
-      {{ book!.authors.toString().replace('Unknown', '') }}
+      <div class="authors-label" :class="{ 'is-list-view': isListView }">
+        {{ book!.authors.toString().replace('Unknown', '') }}
+      </div>
+      <div class="list-view-icons" v-if="isListView">
+        <div v-if="book!.fxtl_is_read" title="Book read"><IconBookRead /></div>
+        <div v-if="displayBookDownloadedIcon" title="Saved on device">
+          <IconDownloadSmall />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -35,6 +47,7 @@ const props = defineProps({
   book: { type: Object },
   displayBookDownloadedIcon: { type: Boolean || undefined },
   image: { type: String },
+  isListView: { type: Boolean, default: false },
 })
 
 const truncated_title = computed(() => {
@@ -59,6 +72,41 @@ const truncated_title = computed(() => {
   width: 10em;
   height: 17em;
   font-size: 100%;
+}
+
+.book_card.is-list-view {
+  width: calc(100% - 2rem);
+  height: 4rem;
+  display: flex;
+  margin: 0.5rem 1rem;
+  align-items: center;
+  gap: 1rem;
+}
+
+.book-info-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.book_card.is-list-view .book-info-container {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.list-view-icons {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.list-view-icons svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #555;
 }
 
 @media (max-width: 640px) {
@@ -86,6 +134,12 @@ const truncated_title = computed(() => {
   border-radius: 5px;
   margin-bottom: 5px;
   box-sizing: border-box;
+}
+.book-cover.is-list-view {
+  width: 2.5rem;
+  height: 3.5rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 .episode-title {
   font-weight: bold;
@@ -123,5 +177,13 @@ const truncated_title = computed(() => {
   display: flex;
   justify-content: flex-start;
   padding: 0 0.1rem;
+}
+.full-title.is-list-view {
+  width: 40%;
+  flex-shrink: 0;
+}
+.authors-label.is-list-view {
+  margin-left: 0;
+  flex-grow: 1;
 }
 </style>

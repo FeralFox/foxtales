@@ -125,6 +125,7 @@ button:after {
       --color-tag: #614630;
       --primary: #BA411B;
       --primary-rgb: 186, 65, 27;
+      --list-item-bg: rgba(218, 88, 23, 0.15);
       --book-border: #444
   }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
