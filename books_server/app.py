@@ -301,6 +301,11 @@ def get_tags(current_user: Annotated[ActiveUserData, Depends(get_current_user)])
     return current_user.library.get_all_tags()
 
 
+@app.get("/get_authors")
+def get_tags(current_user: Annotated[ActiveUserData, Depends(get_current_user)]) -> list[str]:
+    return current_user.library.get_all_authors()
+
+
 @app.get("/get_book")
 def get_book(current_user: Annotated[ActiveUserData, Depends(get_current_user)], book_uuid: str, format: str):
     lib = current_user.library

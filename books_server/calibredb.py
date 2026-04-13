@@ -342,6 +342,21 @@ class CalibreDb:
             logging.error(f"Failed to retrieve tags from database: {e}")
             return []
 
+    def get_all_authors(self) -> list[str]:
+        db_path = self._path / "metadata.db"
+        if not db_path.exists():
+            return []
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM authors")
+            tags = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            return sorted(list(set(tags)))
+        except Exception as e:
+            logging.error(f"Failed to retrieve tags from database: {e}")
+            return []
+
     def wishlist_book(self, bookData: SearchedBook) -> int:
         with tempfile.TemporaryDirectory() as tmpdir_str:
             cover_path = None

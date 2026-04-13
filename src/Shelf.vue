@@ -133,6 +133,46 @@
             </div>
           </div>
         </div>
+        <div class="filter-option tag-filter-option">
+          <div class="option-left">
+            <IconTag class="icon" />
+            <span>Author:</span>
+          </div>
+          <div class="tag-input-container">
+            <input
+              v-model="authorSearch"
+              @focus="showAuthorSuggestions = true"
+              @blur="handleAuthorBlur"
+              @keyup.enter="
+                filteredAuthors.length > 0
+                  ? selectAuthor(filteredAuthors[0])
+                  : null
+              "
+              placeholder="Filter by author..."
+              class="tag-filter-input"
+            />
+            <button
+              v-if="authorSearch"
+              @click="clearAuthorFilter"
+              class="clear-tag-btn"
+            >
+              ×
+            </button>
+            <div
+              v-if="showAuthorSuggestions && filteredAuthors.length > 0"
+              class="tag-suggestions"
+            >
+              <div
+                v-for="author in filteredAuthors"
+                :key="author"
+                @mousedown.prevent="selectAuthor(author)"
+                class="tag-suggestion-item"
+              >
+                {{ author }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div style="overflow: hidden; position: relative; display: flex">
@@ -312,6 +352,10 @@ const tagSearch = ref('')
 const selectedTag = ref('')
 const existingTags = ref<string[]>([])
 const showTagSuggestions = ref(false)
+const existingAuthors = ref<string[]>([])
+const authorSearch = ref('')
+const selectedAuthor = ref('')
+const showAuthorSuggestions = ref(false)
 
 async function fetchExistingTags() {
   try {
@@ -327,8 +371,23 @@ async function fetchExistingTags() {
   }
 }
 
+async function fetchExistingAuthors() {
+  try {
+    const response = await fetch(`${URL}/get_authors`, {
+      headers: authHeaders(),
+    })
+    if (response.ok) {
+      const authors = await response.json()
+      existingAuthors.value = authors.sort((a, b) => a.localeCompare(b))
+    }
+  } catch (e) {
+    console.error('Failed to fetch existing tags:', e)
+  }
+}
+
 onMounted(() => {
   fetchExistingTags()
+  fetchExistingAuthors()
 })
 
 const filteredTags = computed(() => {
@@ -337,9 +396,24 @@ const filteredTags = computed(() => {
   return existingTags.value.filter((tag) => tag.toLowerCase().includes(query))
 })
 
+const filteredAuthors = computed(() => {
+  const query = authorSearch.value.toLowerCase().trim()
+  if (!query) return existingAuthors.value
+  return existingAuthors.value.filter((tag) =>
+    tag.toLowerCase().includes(query),
+  )
+})
+
 function selectTag(tag: string) {
   selectedTag.value = tag
   tagSearch.value = tag
+  showTagSuggestions.value = false
+  applyFilter()
+}
+
+function selectAuthor(tag: string) {
+  selectedAuthor.value = tag
+  authorSearch.value = tag
   showTagSuggestions.value = false
   applyFilter()
 }
@@ -351,8 +425,19 @@ function clearTagFilter() {
   applyFilter()
 }
 
+function clearAuthorFilter() {
+  selectedAuthor.value = ''
+  authorSearch.value = ''
+  showAuthorSuggestions.value = false
+  applyFilter()
+}
+
 function handleTagBlur() {
   setTimeout(() => (showTagSuggestions.value = false), 200)
+}
+
+function handleAuthorBlur() {
+  setTimeout(() => (showAuthorSuggestions.value = false), 200)
 }
 
 async function openDetails(book) {
@@ -661,6 +746,9 @@ function applyFilter() {
   }
   if (selectedTag.value) {
     filter = `${filter} and tags:"=${selectedTag.value}"`
+  }
+  if (selectedAuthor.value) {
+    filter = `${filter} and authors:"=${selectedAuthor.value}"`
   }
   if (showOnlyUnread.value) {
     filter = `${filter} and #fxtl_is_read:"no"`
@@ -1000,6 +1088,8 @@ onMounted(async () => {
 
 .clear-tag-btn {
   position: absolute;
+  padding: 0 0.4rem;
+  box-shadow: none !important;
   right: 0.25rem;
   background: none;
   border: none;
@@ -1007,6 +1097,9 @@ onMounted(async () => {
   font-size: 1.1rem;
   color: #777;
   line-height: 1;
+}
+.clear-tag-btn::after {
+  content: none;
 }
 
 .tag-suggestions {
