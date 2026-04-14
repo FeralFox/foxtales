@@ -19,7 +19,9 @@
       Add to Wishlist
     </ContextMenuItem>
   </ContextMenu>
-  <div style="width: 100%; display: flex; flex-direction: column">
+  <div
+    style="width: 100%; display: flex; flex-direction: column; overflow: hidden"
+  >
     <div
       style="
         display: flex;
@@ -133,11 +135,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useTemplateRef, onMounted, computed } from 'vue'
+import { ref, useTemplateRef, onMounted } from 'vue'
 import { getKeysFromIndexedDb } from './dbaccess'
 import BookCoverThumbnail from './BookCoverThumbnail.vue'
 import Navigation from './Navigation.vue'
-import { authHeaders, URL } from './constants'
+import { URL } from './constants'
 import ContextMenu from './components/ContextMenu.vue'
 import ContextMenuItem from './components/ContextMenuItem.vue'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
@@ -149,6 +151,7 @@ import IconList from '../public/icons/list-svgrepo-com.svg'
 import IconGrid from '../public/icons/grid-svgrepo-com.svg'
 import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import SidebarButton from './components/SidebarButton.vue'
+import { authHeaders, postAsync } from '@/lib'
 
 const searchField = useTemplateRef('search-field')
 
@@ -190,11 +193,7 @@ function selectRecent(term: string) {
 async function addToWishlist(book: SearchedBook) {
   displayBookContextMenu.value = null
   itemOnWishlist.value = 1
-  const response = await fetch(`${URL}/wishlist_book`, {
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    method: 'POST',
-    body: JSON.stringify(book),
-  })
+  const response = await postAsync(`${URL}/wishlist_book`, book)
   itemOnWishlist.value = 2
 }
 
@@ -289,12 +288,6 @@ onMounted(() => {
   to {
     transform: rotate(360deg);
   }
-}
-
-.book_card.list-item {
-  width: 100%;
-  margin: 0;
-  height: auto;
 }
 
 .list-view {

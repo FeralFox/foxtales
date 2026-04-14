@@ -3,6 +3,7 @@ import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
 import vue from '@vitejs/plugin-vue'
 import svgLoader from 'vite-svg-loader'
 import { VitePWA } from 'vite-plugin-pwa'
+import { fileURLToPath, URL } from 'node:url'
 
 // https://cn.vitejs.dev/config/
 export default defineConfig({
@@ -57,5 +58,10 @@ export default defineConfig({
   ],
   build: {
     target: 'esnext', //browsers can handle the latest ES features
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
   },
 })

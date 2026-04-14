@@ -18,7 +18,7 @@
         </div>
       </div>
     </div>
-    <div class="book-info-container">
+    <div class="book-info-container" :class="{ 'is-list-view': isListView }">
       <div class="full-title" :class="{ 'is-list-view': isListView }">
         <div class="episode-title">{{ truncated_title.title }}</div>
         <div v-if="truncated_title.episode" class="episode-label">
@@ -27,6 +27,9 @@
       </div>
       <div class="authors-label" :class="{ 'is-list-view': isListView }">
         {{ book!.authors.toString().replace('Unknown', '') }}
+      </div>
+      <div class="tags-label" :class="{ 'is-list-view': isListView }">
+        {{ book!.tags.toString() }}
       </div>
       <div class="list-view-icons" v-if="isListView">
         <div v-if="book!.fxtl_is_read" title="Book read"><IconBookRead /></div>
@@ -84,19 +87,21 @@ const truncated_title = computed(() => {
 }
 
 .book-info-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-areas: 'title authors tags icons';
+  grid-template-columns: 50% 20% 20% 10%;
   flex-grow: 1;
   overflow: hidden;
 }
-
-.book_card.is-list-view .book-info-container {
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
+@media (max-width: 640px) {
+  .book-info-container {
+    grid-template-areas: 'title icons' 'authors icons' 'tags icons';
+    grid-template-columns: 1fr auto;
+  }
 }
 
 .list-view-icons {
+  grid-area: icons;
   display: flex;
   gap: 0.5rem;
   margin-left: auto;
@@ -119,6 +124,15 @@ const truncated_title = computed(() => {
 </style>
 <style scoped>
 .authors-label {
+  grid-area: authors;
+  color: #0007;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-left: 0.2em;
+}
+.tags-label {
+  grid-area: tags;
   color: #0007;
   font-weight: normal;
   text-overflow: ellipsis;
@@ -174,16 +188,9 @@ const truncated_title = computed(() => {
 }
 
 .full-title {
+  grid-area: title;
   display: flex;
   justify-content: flex-start;
   padding: 0 0.1rem;
-}
-.full-title.is-list-view {
-  width: 40%;
-  flex-shrink: 0;
-}
-.authors-label.is-list-view {
-  margin-left: 0;
-  flex-grow: 1;
 }
 </style>

@@ -34,7 +34,9 @@
       Remove from Shelf
     </ContextMenuItem>
   </ContextMenu>
-  <div style="width: 100%; display: flex; flex-direction: column">
+  <div
+    style="width: 100%; display: flex; flex-direction: column; overflow: hidden"
+  >
     <div
       style="
         display: flex;
@@ -95,90 +97,88 @@
         </div>
       </div>
       <div v-if="displayFilterRow" class="filter-row">
-        <div class="filter-option" @click="toggleUnreadFilter">
-          <div class="option-left">
-            <IconEye class="icon" />
-            <span>Only Unread</span>
-          </div>
-          <div class="toggle-switch" :class="{ 'is-active': showOnlyUnread }">
-            <div class="toggle-handle"></div>
-          </div>
+        <div class="option-left">
+          <IconEye class="icon" />
+          <span>Only Unread</span>
         </div>
-        <div class="filter-option tag-filter-option">
-          <div class="option-left">
-            <IconTag class="icon" />
-            <span>Tag:</span>
-          </div>
-          <div class="tag-input-container">
-            <input
-              v-model="tagSearch"
-              @focus="showTagSuggestions = true"
-              @blur="handleTagBlur"
-              @keyup.enter="
-                filteredTags.length > 0 ? selectTag(filteredTags[0]) : null
-              "
-              placeholder="Filter by tag..."
-              class="tag-filter-input"
-            />
-            <button
-              v-if="tagSearch"
-              @click="clearTagFilter"
-              class="clear-tag-btn"
-            >
-              ×
-            </button>
+        <div
+          class="toggle-switch"
+          :class="{ 'is-active': showOnlyUnread }"
+          @click="toggleUnreadFilter"
+        >
+          <div class="toggle-handle"></div>
+        </div>
+        <div class="option-left">
+          <IconTag class="icon" />
+          <span>Tag:</span>
+        </div>
+        <div class="tag-input-container">
+          <input
+            v-model="tagSearch"
+            @focus="showTagSuggestions = true"
+            @blur="handleTagBlur"
+            @keyup.enter="
+              filteredTags.length > 0 ? selectTag(filteredTags[0]) : null
+            "
+            placeholder="Filter by tag..."
+            class="tag-filter-input"
+          />
+          <button
+            v-if="tagSearch"
+            @click="clearTagFilter"
+            class="clear-tag-btn"
+          >
+            ×
+          </button>
+          <div
+            v-if="showTagSuggestions && filteredTags.length > 0"
+            class="tag-suggestions"
+          >
             <div
-              v-if="showTagSuggestions && filteredTags.length > 0"
-              class="tag-suggestions"
+              v-for="tag in filteredTags"
+              :key="tag"
+              @mousedown.prevent="selectTag(tag)"
+              class="tag-suggestion-item"
             >
-              <div
-                v-for="tag in filteredTags"
-                :key="tag"
-                @mousedown.prevent="selectTag(tag)"
-                class="tag-suggestion-item"
-              >
-                {{ tag }}
-              </div>
+              {{ tag }}
             </div>
           </div>
         </div>
-        <div class="filter-option tag-filter-option">
-          <div class="option-left">
-            <IconAuthor class="icon" />
-            <span>Author:</span>
-          </div>
-          <div class="tag-input-container">
-            <input
-              v-model="authorSearch"
-              @focus="showAuthorSuggestions = true"
-              @blur="handleAuthorBlur"
-              @keyup.enter="
-                filteredAuthors.length > 0
-                  ? selectAuthor(filteredAuthors[0])
-                  : null
-              "
-              placeholder="Filter by author..."
-              class="tag-filter-input"
-            />
-            <button
-              v-if="authorSearch"
-              @click="clearAuthorFilter"
-              class="clear-tag-btn"
-            >
-              ×
-            </button>
+        <div class="option-left">
+          <IconAuthor class="icon" />
+          <span>Author:</span>
+        </div>
+        <div class="tag-input-container">
+          <input
+            v-model="authorSearch"
+            @focus="showAuthorSuggestions = true"
+            @blur="handleAuthorBlur"
+            @keyup.enter="
+              filteredAuthors.length > 0
+                ? selectAuthor(filteredAuthors[0])
+                : null
+            "
+            placeholder="Filter by author..."
+            class="tag-filter-input"
+          />
+          <button
+            v-if="authorSearch"
+            @click="clearAuthorFilter"
+            class="clear-tag-btn"
+          >
+            ×
+          </button>
+          <div
+            v-if="showAuthorSuggestions && filteredAuthors.length > 0"
+            class="tag-suggestions"
+          >
             <div
-              v-if="showAuthorSuggestions && filteredAuthors.length > 0"
-              class="tag-suggestions"
+              v-for="author in filteredAuthors"
+              :key="author"
+              @mousedown.prevent="selectAuthor(author)"
+              class="tag-suggestion-item"
             >
-              <div
-                v-for="author in filteredAuthors"
-                :key="author"
-                @mousedown.prevent="selectAuthor(author)"
-                class="tag-suggestion-item"
-              >
-                {{ author }}
-              </div>
+              {{ author }}
             </div>
           </div>
         </div>
@@ -341,22 +341,23 @@ import {
   loadFromBookDb,
   saveToBookDb,
   saveToIndexedDB,
-} from './dbaccess'
-import BookCoverThumbnail from './BookCoverThumbnail.vue'
-import Navigation from './Navigation.vue'
+} from '@/dbaccess'
+import BookCoverThumbnail from '@/BookCoverThumbnail.vue'
+import Navigation from '@/Navigation.vue'
+import { URL } from '@/constants'
+import ContextMenu from '@/components/ContextMenu.vue'
+import { syncedUpdate } from '@/sync'
+import { BookMeta } from '@/interfaces'
+import SidebarButton from '@/components/SidebarButton.vue'
+import BookDetailsSidebar from '@/components/BookDetailsSidebar.vue'
+import ContextMenuItem from '@/components/ContextMenuItem.vue'
+import { authHeaders, computeInitialFetchCount, fetchAsync } from '@/lib'
 import IconAddBook from '../public/icons/education-book-add-svgrepo-com.svg'
-import { authHeaders, URL } from './constants'
-import ContextMenu from './components/ContextMenu.vue'
-import ContextMenuItem from './components/ContextMenuItem.vue'
 import IconDownload from '../public/icons/download-svgrepo-com.svg'
 import IconRemove from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
 import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 import IconBookRead from '../public/icons/eye-svgrepo-com.svg'
 import IconBookUnread from '../public/icons/eye-filled-svgrepo-com.svg'
-import { syncedUpdate } from './sync'
-import { BookMeta } from './interfaces'
-import SidebarButton from './components/SidebarButton.vue'
-import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconFilter from '../public/icons/filter-svgrepo-com.svg'
 import IconFilterFilled from '../public/icons/filter-filled-svgrepo-com.svg'
@@ -365,7 +366,6 @@ import IconTag from '../public/icons/tag-svgrepo-com.svg'
 import IconAuthor from '../public/icons/author-svgrepo-com.svg'
 import IconList from '../public/icons/list-svgrepo-com.svg'
 import IconGrid from '../public/icons/grid-svgrepo-com.svg'
-import { computeInitialFetchCount } from './lib'
 
 const bookContainer = useTemplateRef('book-container')
 const uploadBook = useTemplateRef('upload-book')
@@ -386,13 +386,8 @@ const showAuthorSuggestions = ref(false)
 
 async function fetchExistingTags() {
   try {
-    const response = await fetch(`${URL}/get_tags`, {
-      headers: authHeaders(),
-    })
-    if (response.ok) {
-      const tags = await response.json()
-      existingTags.value = tags.sort((a, b) => a.localeCompare(b))
-    }
+    const tags = await fetchAsync(`${URL}/get_tags`)
+    existingTags.value = tags.sort((a, b) => a.localeCompare(b))
   } catch (e) {
     console.error('Failed to fetch existing tags:', e)
   }
@@ -400,13 +395,8 @@ async function fetchExistingTags() {
 
 async function fetchExistingAuthors() {
   try {
-    const response = await fetch(`${URL}/get_authors`, {
-      headers: authHeaders(),
-    })
-    if (response.ok) {
-      const authors = await response.json()
-      existingAuthors.value = authors.sort((a, b) => a.localeCompare(b))
-    }
+    const authors = await fetchAsync(`${URL}/get_authors`)
+    existingAuthors.value = authors.sort((a, b) => a.localeCompare(b))
   } catch (e) {
     console.error('Failed to fetch existing tags:', e)
   }
@@ -480,28 +470,6 @@ function handleBookUpdate(book: BookMeta | null, newTags: string[]) {
   if (book) {
     book.tags = newTags
   }
-}
-
-async function postAsync(url: string, data: object) {
-  const response = await fetch(`${URL}/set_book_metadata`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-    },
-    body: JSON.stringify(data),
-  })
-  return await response.json()
-}
-
-async function fetchAsync(url: string) {
-  const response = await fetch(url, { headers: authHeaders() })
-  if (response.status === 401) {
-    window.location.hash = '#/login'
-    throw 'Authorization error - forward to login page.'
-  }
-  return await response.json()
 }
 
 const books = ref<BookMeta[]>([])
@@ -894,7 +862,7 @@ function onScroll() {
 onMounted(async () => {
   // Ensure DOM is ready to measure tile and container sizes
   await nextTick()
-  loadBooks(
+  await loadBooks(
     0,
     SHELF_DEFAULT_FILTER,
     true,
@@ -907,20 +875,6 @@ onMounted(async () => {
   )
 })
 </script>
-
-<style>
-.tag {
-  background-color: var(--color-tag);
-  font-size: 0.9em;
-  color: #fffd;
-  font-weight: bold;
-  padding: 0 6px;
-  border-radius: 5px;
-  display: flex;
-  align-items: baseline;
-  margin-left: 5px;
-}
-</style>
 
 <style scoped>
 .add-book-icon {
@@ -1085,10 +1039,17 @@ onMounted(async () => {
 }
 
 .filter-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, auto auto) 1fr;
   padding: 0.5rem 0;
-  gap: 1rem;
   flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  .filter-row {
+    grid-template-columns: auto 1fr;
+  }
 }
 
 .filter-option {
@@ -1113,6 +1074,7 @@ onMounted(async () => {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .tag-filter-input {
@@ -1120,7 +1082,7 @@ onMounted(async () => {
   border-radius: 4px;
   border: 1px solid var(--book-border);
   font-size: 0.9rem;
-  width: 150px;
+  width: 100%;
 }
 
 .clear-tag-btn {
@@ -1170,6 +1132,7 @@ onMounted(async () => {
 
 .option-left {
   display: flex;
+  min-width: fit-content;
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
@@ -1188,6 +1151,8 @@ onMounted(async () => {
   border-radius: 1rem;
   position: relative;
   transition: background-color 0.2s;
+  justify-self: flex-end;
+  cursor: pointer;
 }
 
 .toggle-switch.is-active {

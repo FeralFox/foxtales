@@ -33,3 +33,38 @@ export function get_uuid(): string {
     ).toString(16),
   )
 }
+
+export function authHeaders(): HeadersInit {
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    return { Authorization: `Bearer ${token}` }
+  }
+  // Return an empty Headers object to satisfy HeadersInit when no token is present
+  return new Headers()
+}
+
+export async function fetchAsync(url: string, headers?: object) {
+  const additional_headers = headers || {}
+  const response = await fetch(url, {
+    headers: authHeaders(),
+    ...additional_headers,
+  })
+  if (response.status === 401) {
+    window.location.hash = '#/login'
+    throw 'Authorization error - forward to login page.'
+  }
+  return await response.json()
+}
+
+export async function postAsync(url: string, data: object) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify(data),
+  })
+  return await response.json()
+}

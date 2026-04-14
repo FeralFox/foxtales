@@ -51,7 +51,7 @@
 </style>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, toRaw } from 'vue'
+import { onMounted, ref, toRaw } from 'vue'
 import {
   deleteFromIndexedDB,
   getValuesFromIndexedDB,

@@ -92,8 +92,9 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
-import type { SearchedBook, BookMeta } from '../interfaces'
-import { authHeaders, URL } from '../constants'
+import type { SearchedBook, BookMeta } from '@/interfaces'
+import { URL } from '@/constants'
+import { fetchAsync, postAsync } from '@/lib'
 
 const props = defineProps<{
   book: (SearchedBook | BookMeta) | null | undefined
@@ -135,12 +136,7 @@ const tagInput = ref<HTMLInputElement | null>(null)
 
 async function fetchExistingTags() {
   try {
-    const response = await fetch(`${URL}/get_tags`, {
-      headers: authHeaders(),
-    })
-    if (response.ok) {
-      existingTags.value = await response.json()
-    }
+    existingTags.value = await fetchAsync(`${URL}/get_tags`)
   } catch (e) {
     console.error('Failed to fetch existing tags:', e)
   }
@@ -209,17 +205,9 @@ async function confirmRemoveTag() {
 async function updateTags(newTags: string[]) {
   if (!props.book) return
   try {
-    const response = await fetch(`${URL}/set_data`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
-      body: JSON.stringify({
-        book_uuid: props.book.uuid,
-        tags: newTags.join(','),
-      }),
+    const response = await postAsync(`${URL}/set_data`, {
+      book_uuid: props.book.uuid,
+      tags: newTags.join(','),
     })
     if (response.ok) {
       emit('update', newTags)
@@ -346,15 +334,6 @@ async function updateTags(newTags: string[]) {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.tag-input {
-  border: 1px solid var(--book-border);
-  border-radius: 999px;
-  padding: 0.2rem 0.6rem;
-  font-size: 0.75rem;
-  outline: none;
-  width: 80px;
-}
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -435,15 +414,6 @@ async function updateTags(newTags: string[]) {
   gap: 0.5rem;
 }
 
-.btn-primary {
-  background: rgb(var(--primary-rgb, 60, 120, 216));
-  color: white;
-  border: none;
-  padding: 0.4rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
 .btn-danger {
   background: #d32f2f;
   color: white;
@@ -464,10 +434,6 @@ async function updateTags(newTags: string[]) {
   padding: 0.4rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-}
-
-.btn-primary:hover {
-  filter: brightness(0.9);
 }
 
 .btn-secondary:hover {

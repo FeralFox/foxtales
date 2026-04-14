@@ -20,6 +20,25 @@
     </button>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import Logo from '../public/icons/logo_dark.svg'
+import BookStackIcon from '../public/icons/books-stack-svgrepo-com.svg'
+import ShelfIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
+import FavoritesIcon from '../public/icons/favorites-svgrepo-com.svg'
+import ExploreIcon from '../public/icons/explore-svgrepo-com.svg'
+
+const props = defineProps(['active'])
+
+const isAuthenticated = computed(() => !!localStorage.getItem('auth_token'))
+
+function logout() {
+  localStorage.removeItem('auth_token')
+  window.location.href = '/#/lib'
+}
+</script>
+
 <style scoped>
 .navigation {
   align-items: center;
@@ -30,7 +49,7 @@
   flex-direction: column;
   letter-spacing: 0.7px;
   width: 4rem;
-  min-width: 4rem;
+  min-width: fit-content;
   text-align: center;
   font-size: 90%;
 }
@@ -40,8 +59,10 @@
   border-top-left-radius: 5px;
   border-bottom-left-radius: 5px;
   line-height: 1;
-  padding-bottom: 5px;
+  padding: 0 5px 5px 5px;
   transition: var(--transition-default);
+  display: flex;
+  flex-direction: column;
 }
 .navigation a.is-active {
   background-color: white;
@@ -56,8 +77,7 @@
 .logo {
   width: 2.5rem;
   height: 2.5rem;
-  padding: 0.5rem;
-  padding-bottom: 0;
+  padding: 0.5rem 0.5rem 0;
   opacity: 1;
 }
 .logout-btn {
@@ -76,20 +96,3 @@
   background: #fff3;
 }
 </style>
-<script setup lang="ts">
-import { computed } from 'vue'
-import Logo from '../public/icons/logo_dark.svg'
-import BookStackIcon from '../public/icons/books-stack-svgrepo-com.svg'
-import ShelfIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
-import FavoritesIcon from '../public/icons/favorites-svgrepo-com.svg'
-import ExploreIcon from '../public/icons/explore-svgrepo-com.svg'
-
-const props = defineProps(['active'])
-
-const isAuthenticated = computed(() => !!localStorage.getItem('auth_token'))
-
-function logout() {
-  localStorage.removeItem('auth_token')
-  window.location.href = '/#/lib'
-}
-</script>

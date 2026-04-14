@@ -23,12 +23,3 @@ export const ANNOTATION_CATEGORIES = {
     displayName: 'Red',
   },
 }
-
-export function authHeaders(): HeadersInit {
-  const token = localStorage.getItem('auth_token')
-  if (token) {
-    return { Authorization: `Bearer ${token}` }
-  }
-  // Return an empty Headers object to satisfy HeadersInit when no token is present
-  return new Headers()
-}

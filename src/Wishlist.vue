@@ -20,7 +20,9 @@
     </ContextMenuItem>
   </ContextMenu>
 
-  <div style="width: 100%; display: flex; flex-direction: column">
+  <div
+    style="width: 100%; display: flex; flex-direction: column; overflow: hidden"
+  >
     <div
       style="
         display: flex;
@@ -148,21 +150,21 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
-import { getKeysFromIndexedDb } from './dbaccess'
-import BookCoverThumbnail from './BookCoverThumbnail.vue'
-import Navigation from './Navigation.vue'
-import { authHeaders, URL } from './constants'
-import ContextMenu from './components/ContextMenu.vue'
-import ContextMenuItem from './components/ContextMenuItem.vue'
-import IconRemove from '../public/icons/remove-from-wishlist-svgrepo-com.svg'
-import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
-import { BookMeta } from './interfaces'
-import BookDetailsSidebar from './components/BookDetailsSidebar.vue'
-import SidebarButton from './components/SidebarButton.vue'
+import { getKeysFromIndexedDb } from '@/dbaccess'
+import BookCoverThumbnail from '@/BookCoverThumbnail.vue'
+import Navigation from '@/Navigation.vue'
+import { URL } from '@/constants'
+import ContextMenu from '@/components/ContextMenu.vue'
+import ContextMenuItem from '@/components/ContextMenuItem.vue'
+import { BookMeta } from '@/interfaces'
+import BookDetailsSidebar from '@/components/BookDetailsSidebar.vue'
+import SidebarButton from '@/components/SidebarButton.vue'
+import { authHeaders, computeInitialFetchCount, fetchAsync } from '@/lib'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconList from '../public/icons/list-svgrepo-com.svg'
 import IconGrid from '../public/icons/grid-svgrepo-com.svg'
-import { computeInitialFetchCount } from './lib'
+import IconRemove from '../public/icons/remove-from-wishlist-svgrepo-com.svg'
+import IconSearch from '../public/icons/magnifier-svgrepo-com.svg'
 
 const bookContainer = useTemplateRef('book-container')
 const searchField = useTemplateRef('search-field')
@@ -190,28 +192,6 @@ function handleBookUpdate(book: BookMeta | null, newTags: string[]) {
   if (book) {
     book.tags = newTags
   }
-}
-
-async function postAsync(url: string, data: object) {
-  const response = await fetch(`${URL}/set_book_metadata`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-    },
-    body: JSON.stringify(data),
-  })
-  return await response.json()
-}
-
-async function fetchAsync(url: string) {
-  const response = await fetch(url, { headers: authHeaders() })
-  if (response.status === 401) {
-    window.location.hash = '#/login'
-    throw 'Authorization error - forward to login page.'
-  }
-  return await response.json()
 }
 
 const books = ref<BookMeta[]>([])
@@ -412,12 +392,6 @@ onMounted(async () => {
   to {
     transform: rotate(360deg);
   }
-}
-
-.book_card.list-item {
-  width: 100%;
-  margin: 0;
-  height: auto;
 }
 
 .list-view {
