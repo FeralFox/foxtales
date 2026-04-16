@@ -28,7 +28,11 @@
       <div class="authors-label" :class="{ 'is-list-view': isListView }">
         {{ book!.authors.toString().replace('Unknown', '') }}
       </div>
-      <div class="tags-label" :class="{ 'is-list-view': isListView }">
+      <div
+        class="tags-label"
+        :class="{ 'is-list-view': isListView }"
+        v-if="isListView"
+      >
         {{ book!.tags.toString() }}
       </div>
       <div class="list-view-icons" v-if="isListView">
@@ -88,13 +92,16 @@ const truncated_title = computed(() => {
 
 .book-info-container {
   display: grid;
-  grid-template-areas: 'title authors tags icons';
-  grid-template-columns: 50% 20% 20% 10%;
+  grid-template-areas: 'title' 'authors';
   flex-grow: 1;
   overflow: hidden;
 }
+.book-info-container.is-list-view {
+  grid-template-areas: 'title authors tags icons';
+  grid-template-columns: 50% 20% 20% 10%;
+}
 @media (max-width: 640px) {
-  .book-info-container {
+  .book-info-container.is-list-view {
     grid-template-areas: 'title icons' 'authors icons' 'tags icons';
     grid-template-columns: 1fr auto;
   }
@@ -192,5 +199,7 @@ const truncated_title = computed(() => {
   display: flex;
   justify-content: flex-start;
   padding: 0 0.1rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 </style>
