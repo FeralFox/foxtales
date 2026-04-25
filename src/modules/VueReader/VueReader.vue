@@ -502,6 +502,7 @@ const getCSS = ({ justify, hyphenate }) => `
     body {
         font-size: inherit !important;
         color: inherit !important;
+        background-color: ${styles.value.background} !important;
       }
     /* https://github.com/whatwg/html/issues/5426 */
     @media (prefers-color-scheme: dark) {
