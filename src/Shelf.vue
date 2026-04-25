@@ -756,7 +756,7 @@ function applyFilter() {
   loadBooks(0, filter, true, true)
 }
 
-const BOOKS_TO_PREFETCH = 10
+const BOOKS_TO_PREFETCH = 20
 const booksLoading = ref(false)
 let current_filter = SHELF_DEFAULT_FILTER
 
@@ -988,6 +988,7 @@ onMounted(async () => {
 .search-field {
   flex-grow: 1;
   padding: 0.5rem;
+  width: 100%;
   border-radius: 5px;
   border: 1px solid var(--book-border);
 }

@@ -298,6 +298,7 @@ onMounted(() => {
 .search-field {
   flex-grow: 1;
   padding: 0.5rem;
+  width: 100%;
   border-radius: 5px;
   border: 1px solid var(--book-border);
 }
