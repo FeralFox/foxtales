@@ -6,7 +6,7 @@ export function computeInitialFetchCount(
   if (!container || !tile) return minimum_books
 
   const containerWidth = container.clientWidth
-  const containerHeight = container.clientHeight
+  const containerHeight = document.getElementsByTagName('body')[0].clientHeight
 
   const style = window.getComputedStyle(tile)
   const marginX =
@@ -22,6 +22,7 @@ export function computeInitialFetchCount(
   // one tile is used by the upload tile always visible
   const capacity = cols * rows - 1
   // keep a sensible lower bound to avoid fetching too few on tiny measurements
+  console.log('Capacity to prefetch', cols, rows, capacity)
   return Math.max(minimum_books, capacity)
 }
 
