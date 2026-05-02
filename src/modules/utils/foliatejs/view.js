@@ -426,7 +426,7 @@ export class View extends HTMLElement {
           return
         }
         const range = doc ? anchor(doc) : anchor
-        overlayer.add(value, range, Overlayer.outline)
+        overlayer.add(value, range, Overlayer.outline, { color: '#0000ff' })
       }
       return
     }

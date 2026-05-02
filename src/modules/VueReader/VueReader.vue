@@ -352,14 +352,23 @@ const styles = ref(defaultStyles)
 
 function selectNavigation() {
   selectedTab.value = 'navigation'
+  if (rendition) {
+    rendition.clearSearch()
+  }
 }
 
 function selectView() {
   selectedTab.value = 'view'
+  if (rendition) {
+    rendition.clearSearch()
+  }
 }
 
 function selectAnnotations() {
   selectedTab.value = 'annotations'
+  if (rendition) {
+    rendition.clearSearch()
+  }
 }
 
 const searchQuery = ref('')
@@ -370,7 +379,8 @@ const allSearchResults = ref([])
 
 function selectSearch() {
   selectedTab.value = 'search'
-  if (searchQuery.value) {
+  if (searchQuery.value && rendition) {
+    rendition.clearSearch()
     performSearch()
   }
 }
@@ -827,6 +837,9 @@ const onTocChange = (_toc) => {
 
 const toggleToc = () => {
   expandedToc.value = !expandedToc.value
+  if (!expandedToc.value && rendition) {
+    rendition.clearSearch()
+  }
 }
 
 const next = () => {
@@ -844,6 +857,9 @@ const pre = () => {
 const setLocation = (href, close = true) => {
   bookRef.value.setLocation(href)
   expandedToc.value = false
+  if (rendition) {
+    rendition.clearSearch()
+  }
   expandedToc.value = !close
 }
 </script>
@@ -1090,7 +1106,8 @@ const setLocation = (href, close = true) => {
 
 .searchMatch {
   font-weight: bold;
-  background: yellow;
+  background: #6666c8;
+  color: white;
 }
 
 .loadAllButton {
