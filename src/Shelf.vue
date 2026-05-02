@@ -717,50 +717,6 @@ onMounted(async () => {
   width: 100%;
 }
 
-.search-field {
-  flex-grow: 1;
-  padding: 0.5rem;
-  width: 100%;
-  border-radius: 5px;
-  border: 1px solid var(--book-border);
-}
-
-.search-field-btn {
-  height: 100%;
-  position: absolute;
-  right: 0;
-  transform: translate(-75%, 0);
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: #777;
-}
-
-.search-field-btn svg {
-  width: 1em;
-  height: 1em;
-}
-
-.filter-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  margin-left: 0.5rem;
-  cursor: pointer;
-  color: #777;
-  border: 1px solid var(--book-border);
-  border-radius: 5px;
-  background: white;
-  transition: all 0.2s ease;
-  min-width: 1.2rem;
-}
-
-.filter-btn:hover {
-  background: #f5f5f5;
-  color: var(--primary);
-}
-
 .list-item {
   width: calc(100% - 1rem);
   transition: 0.2s ease-in-out;

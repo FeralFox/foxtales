@@ -343,6 +343,7 @@ onMounted(() => {
   color: var(--primary);
   border-color: var(--primary);
   background: rgba(var(--primary-rgb), 0.1);
+  width: 1.2rem;
 }
 
 .filter-btn svg {

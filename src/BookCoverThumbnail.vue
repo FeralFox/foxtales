@@ -100,7 +100,7 @@ const truncated_title = computed(() => {
   grid-template-areas: 'title authors tags icons';
   grid-template-columns: 50% 20% 20% 10%;
 }
-@media (max-width: 640px) {
+@media (max-width: 1000px) {
   .book-info-container.is-list-view {
     grid-template-areas: 'title icons' 'authors icons' 'tags icons';
     grid-template-columns: 1fr auto;

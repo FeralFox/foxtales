@@ -296,11 +296,13 @@ onMounted(() => {
   outline: none;
   background: white;
   color: #222;
+  width: 100%;
 }
 
 .search-field-btn {
   position: absolute;
   right: 0.5rem;
+  height: 100%;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
@@ -312,8 +314,8 @@ onMounted(() => {
 }
 
 .search-field-btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1em;
+  height: 1em;
 }
 
 .filter-btn {
@@ -339,7 +341,7 @@ onMounted(() => {
   border-color: var(--primary);
   background: rgba(var(--primary-rgb), 0.1);
   text-align: center;
-  width: 1.1rem;
+  width: 1.2rem;
 }
 
 .filter-row {
