@@ -24,7 +24,7 @@ The development is focused on these features:
 
 ## Installation
 
-Just copy the [docker-compose.yaml](docker-compose.yaml) to your machine or server, modify the variables so that it
+Just copy the [docker-compose.template.yaml](docker-compose.template.yaml) to your machine or server, modify the variables so that it
 suits your needs and run it using `docker compose up`
 
 ⚠️ I do not have to tell you that the password "password" is a bad idea, so please change it ;-)
