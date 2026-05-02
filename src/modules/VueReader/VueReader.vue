@@ -97,6 +97,12 @@
             <IconPen />
           </div>
           <div
+            @click="selectSearch"
+            :class="selectedTab === 'search' ? 'selectedTab' : ''"
+          >
+            <IconSearch />
+          </div>
+          <div
             @click="selectView"
             :class="selectedTab === 'view' ? 'selectedTab' : ''"
           >
@@ -200,6 +206,41 @@
             </button>
           </div>
         </div>
+
+        <div v-if="selectedTab === 'search'" class="searchTab">
+          <div class="searchBar">
+            <input
+              v-model="searchQuery"
+              @keyup.enter="performSearch"
+              placeholder="Search in book..."
+              class="searchInput"
+            />
+            <button @click="performSearch" class="searchButton">Search</button>
+          </div>
+          <div v-if="isSearching" class="searchStatus">Searching...</div>
+          <div
+            v-else-if="searchResults.length === 0 && searchQuery"
+            class="searchStatus"
+          >
+            No results found
+          </div>
+          <div class="searchResults">
+            <div
+              v-for="result in searchResults"
+              :key="result.cfi"
+              class="searchResultItem"
+              @click="goToSearchResult(result)"
+            >
+              <div class="searchExcerpt">
+                <span v-if="result.excerpt.pre">{{ result.excerpt.pre }}</span>
+                <span class="searchMatch">{{ result.excerpt.match }}</span>
+                <span v-if="result.excerpt.post">{{
+                  result.excerpt.post
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-if="expandedToc" class="tocBackground" @click="toggleToc"></div>
@@ -221,6 +262,7 @@ import {
 } from 'vue'
 import { get_uuid } from '../../lib'
 import IconBookRead from '../../../public/icons/eye-svgrepo-com.svg'
+import IconSearch from '../../../public/icons/magnifier-svgrepo-com.svg'
 import IconPen from '../../../public/icons/pen-square-svgrepo-com.svg'
 import IconBook from '../../../public/icons/book-svgrepo-com.svg'
 import IconTrash from '../../../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
@@ -304,6 +346,44 @@ function selectView() {
 
 function selectAnnotations() {
   selectedTab.value = 'annotations'
+}
+
+const searchQuery = ref('')
+const searchResults = ref([])
+const isSearching = ref(false)
+
+function selectSearch() {
+  selectedTab.value = 'search'
+}
+
+async function performSearch() {
+  if (!searchQuery.value || !rendition) return
+  isSearching.value = true
+  searchResults.value = []
+  try {
+    const results = []
+    const iter = rendition.search({ query: searchQuery.value })
+    for await (const result of iter) {
+      if (result.subitems) {
+        for (const item of result.subitems) {
+          results.push(item)
+          if (results.length >= 10) break
+        }
+      } else if (result.cfi) {
+        results.push(result)
+      }
+      if (results.length >= 10) break
+    }
+    searchResults.value = results
+  } catch (e) {
+    console.error('Search failed', e)
+  } finally {
+    isSearching.value = false
+  }
+}
+
+function goToSearchResult(result) {
+  rendition.goTo(result.cfi)
 }
 
 function increaseFontSize() {
@@ -614,6 +694,7 @@ const onGetRendition = (val) => {
             colorPicker.cfi = cfi
             colorPicker.text = String(sel)
             colorPicker.show = true
+            searchQuery.value = colorPicker.text
             // user hook
             if (typeof props.onTextSelected === 'function') {
               props.onTextSelected({ x: e.clientX, y: e.clientY })
@@ -918,6 +999,65 @@ const setLocation = (href, close = true) => {
 
 .tocArea .tocAreaButton:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.searchTab {
+  padding: 1rem;
+}
+
+.searchBar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.searchInput {
+  flex-grow: 1;
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.searchButton {
+  padding: 0.4rem 0.8rem;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  min-width: fit-content;
+}
+
+.searchStatus {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.searchResultItem {
+  padding: 0.6rem;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.searchResultItem:hover {
+  background: #f9f9f9;
+}
+
+.searchMatch {
+  font-weight: bold;
+  background: yellow;
 }
 
 .tocArea .tocAreaButton:active {
