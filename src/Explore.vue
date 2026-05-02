@@ -407,9 +407,10 @@ onMounted(() => {
 }
 
 .libraries-loading-spinner {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
   background: #fffa;
@@ -419,11 +420,6 @@ onMounted(() => {
   z-index: 1;
 }
 
-@media (max-width: 640px) {
-  .libraries-loading-spinner {
-    margin-left: 1rem;
-  }
-}
 .list-item {
   width: calc(100% - 1rem);
   transition: 0.2s ease-in-out;
