@@ -240,6 +240,20 @@
               </div>
             </div>
           </div>
+          <div v-if="!showAllResults" class="spoilersHiddenHint">
+            Results after this page are hidden to avoid spoilers.
+          </div>
+          <button
+            v-if="
+              !showAllResults &&
+              allSearchResults.length > searchResults.length &&
+              !isSearching
+            "
+            @click="loadAllResults"
+            class="loadAllButton"
+          >
+            Load all search results ({{ allSearchResults.length }})
+          </button>
         </div>
       </div>
 
@@ -351,35 +365,53 @@ function selectAnnotations() {
 const searchQuery = ref('')
 const searchResults = ref([])
 const isSearching = ref(false)
+const showAllResults = ref(false)
+const allSearchResults = ref([])
 
 function selectSearch() {
   selectedTab.value = 'search'
+  if (searchQuery.value) {
+    performSearch()
+  }
 }
 
 async function performSearch() {
   if (!searchQuery.value || !rendition) return
   isSearching.value = true
   searchResults.value = []
+  allSearchResults.value = []
+  showAllResults.value = false
   try {
     const results = []
     const iter = rendition.search({ query: searchQuery.value })
+    const currentEndCFI = rendition.lastLocation?.endCfi
     for await (const result of iter) {
       if (result.subitems) {
         for (const item of result.subitems) {
           results.push(item)
-          if (results.length >= 10) break
         }
       } else if (result.cfi) {
         results.push(result)
       }
-      if (results.length >= 10) break
     }
-    searchResults.value = results
+    allSearchResults.value = results
+    if (currentEndCFI && rendition.constructor.CFI) {
+      searchResults.value = results.filter(
+        (r) => rendition.constructor.CFI.compare(r.cfi, currentEndCFI) <= 0,
+      )
+    } else {
+      searchResults.value = results
+    }
   } catch (e) {
     console.error('Search failed', e)
   } finally {
     isSearching.value = false
   }
+}
+
+function loadAllResults() {
+  showAllResults.value = true
+  searchResults.value = allSearchResults.value
 }
 
 function goToSearchResult(result) {
@@ -1016,6 +1048,7 @@ const setLocation = (href, close = true) => {
   padding: 0.4rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+  width: 100%;
 }
 
 .searchButton {
@@ -1058,6 +1091,21 @@ const setLocation = (href, close = true) => {
 .searchMatch {
   font-weight: bold;
   background: yellow;
+}
+
+.loadAllButton {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.loadAllButton:hover {
+  background: #e0e0e0;
 }
 
 .tocArea .tocAreaButton:active {
@@ -1209,6 +1257,7 @@ const setLocation = (href, close = true) => {
   gap: 4px;
   font-weight: bold;
   box-sizing: border-box;
+  height: 3rem;
 }
 .picker-btn {
   border: none;
@@ -1218,5 +1267,9 @@ const setLocation = (href, close = true) => {
   font-size: 12px;
   font-weight: bold;
   flex-grow: 1;
+}
+.spoilersHiddenHint {
+  text-align: center;
+  padding-top: 1rem;
 }
 </style>
