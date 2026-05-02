@@ -13,11 +13,14 @@ The development is focused on these features:
 * Offline support: Read your most loved books in the deepest desert.
 * Ebook-Reader friendly
 * Mobile friendly
-* Installable Web-App
 * Easy to self-host
+* Installable Web-App
 * Sync of reading progress across devices
 * Avoid vendor lock-in by managing the whole library in Calibre-compatible format
-* Support of multiple users (Not there yet, sorry, it's only for you atm 💝)
+
+## UI
+
+![image](screenshot.png)
 
 ## Installation
 
@@ -28,9 +31,9 @@ suits your needs and run it using `docker compose up`
 
 ## Supported file formats
 
-* PDF
 * EPUB
 * CBZ
+* PDF
 * MOBI
 * KF8 (AZW3)
 * FB2
@@ -43,12 +46,12 @@ suits your needs and run it using `docker compose up`
 | Implement pagination for big libraries | Done     |
 | Sync reading progress                  | Done     |
 | Implement search features              | Done     |
-| Multi-User                             | Prepared |
-| Browse books by tags                   | Prepared |
-| Wishlist books                         | Planned  |
-| Add book discovery                     | Planned  |
+| Multi-User                             | Done     |
+| Browse books by tags                   | Done     |
+| Wishlist books                         | Done     |
+| Add book discovery                     | Done     |
 | Online Demo                            | Planned  |
-| Annotations                            | Planned  |
+| Annotations                            | For Epub |
 
 
 ## Technical stuff
