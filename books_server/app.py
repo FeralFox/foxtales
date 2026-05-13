@@ -293,7 +293,8 @@ def set_data(current_user: Annotated[ActiveUserData, Depends(get_current_user)],
         tags = sorted(data.tags.split(","))
         lib.set_metadata(book_id, "tags", ",".join(tags))
     if data.authors:
-        lib.set_metadata(book_id, "authors", data.tags)
+        lib.set_metadata(book_id, "authors", data.authors)
+    return Status(success=True)
 
 
 @app.get("/get_tags")
@@ -470,14 +471,17 @@ def _analyze_baka_page(title: str, year: str, url: str) -> SearchedBook:
 
 @functools.lru_cache(maxsize=10)
 def _search_book_on_google_books(search_query: str) -> list[SearchedBook]:
+    exception = None
     for _ in range(5):
         try:
             x = google_books_api_wrapper.api.GoogleBooksAPI().search_book(search_query)
             break
         except GoogleBooksAPIException as exc:
+            exception = exc
             time.sleep(1)
     else:
-        raise exc
+        if exception:
+            raise exception
     results = []
     for result in x:
         authors = ", ".join(result.authors or [])

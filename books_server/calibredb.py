@@ -13,11 +13,13 @@ import tempfile
 import io
 import sqlite3
 import threading
+from subprocess import CalledProcessError
 from typing import Optional
 
 import PIL.Image
 from PIL import ImageFile
 import requests
+from fastapi import HTTPException
 
 LIBRARY_PATH = pathlib.Path("/config/Calibre Library")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -226,7 +228,11 @@ class CalibreDb:
 
     def add_book_from_file(self, book: pathlib.Path, users: Optional[list[str]] = None) -> int:
         """Add a book to Calibre library."""
-        result = subprocess.check_output(['calibredb', "add", book.as_posix(), *self._get_auth()])
+        try:
+            result = subprocess.check_output(['calibredb', "add", "--automerge", "ignore", book.as_posix(),
+                                              *self._get_auth()])
+        except CalledProcessError:
+            raise HTTPException(401, "Book already exists.")
         try:
             book_id = int(re.findall(b"\d+", result)[0])
         except Exception as error:
@@ -236,6 +242,7 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
         self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "")
+        self._book_cache.clear()
         return book_id
 
     def add_book(self,

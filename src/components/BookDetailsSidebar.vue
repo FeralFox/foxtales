@@ -21,7 +21,10 @@
       <div class="description" v-if="book.description">
         {{ book.description }}
       </div>
-      <div class="tags-container" v-if="'tags' in book">
+      <div
+        class="tags-container"
+        v-if="book && ('tags' in book || 'id' in book)"
+      >
         <div v-for="tag in currentTags" :key="tag" class="chip">
           {{ tag }}
           <span class="remove-tag" @click="removeTag(tag)">×</span>
@@ -120,8 +123,21 @@ const currentTags = ref<string[]>([])
 watch(
   () => props.book,
   (newBook) => {
-    if (newBook && 'tags' in newBook && Array.isArray(newBook.tags)) {
-      currentTags.value = [...newBook.tags]
+    if (newBook) {
+      if ('tags' in newBook) {
+        if (Array.isArray(newBook.tags)) {
+          currentTags.value = [...newBook.tags]
+        } else if (typeof newBook.tags === 'string') {
+          const tagsStr = newBook.tags as string
+          currentTags.value = tagsStr ? tagsStr.split(',') : []
+        } else {
+          currentTags.value = []
+        }
+      } else {
+        // If it doesn't have tags, it might be a newly added book or a SearchedBook.
+        // We'll initialize it as an empty array to allow adding tags.
+        currentTags.value = []
+      }
     } else {
       currentTags.value = []
     }
@@ -209,7 +225,7 @@ async function updateTags(newTags: string[]) {
       book_uuid: props.book.uuid,
       tags: newTags.join(','),
     })
-    if (response.ok) {
+    if (response.success || response.ok) {
       emit('update', newTags)
     }
   } catch (e) {
