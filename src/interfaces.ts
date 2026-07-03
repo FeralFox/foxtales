@@ -17,9 +17,9 @@ export interface BookMeta {
   tags: string[]
   timestamp: string
   fxtl_owner: string
-  fxtl_is_read: Boolean
   fxtl_progress: number
   fxtl_progress_update: string
+  fxtl_status: string[]
 }
 
 export interface SearchedBook {

@@ -26,6 +26,7 @@ async function updateSingleDb(dbName: string) {
 export async function syncDbUpdates() {
   await updateSingleDb('update-progress')
   await updateSingleDb('update-read-status')
+  await updateSingleDb('update-favorite-status')
   await updateSingleDb('update-annotations')
 }
 

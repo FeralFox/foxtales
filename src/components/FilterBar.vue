@@ -72,6 +72,17 @@
         <div class="toggle-handle"></div>
       </div>
       <div class="option-left">
+        <IconFavorite class="icon" />
+        <span>Only Favorites</span>
+      </div>
+      <div
+        class="toggle-switch"
+        :class="{ 'is-active': showOnlyFavorites }"
+        @click="toggleFavoriteFilter"
+      >
+        <div class="toggle-handle"></div>
+      </div>
+      <div class="option-left">
         <IconTag class="icon" />
         <span>Tag:</span>
       </div>
@@ -153,6 +164,7 @@ import IconFilterFilled from '../../public/icons/filter-filled-svgrepo-com.svg'
 import IconEye from '../../public/icons/eye-svgrepo-com.svg'
 import IconTag from '../../public/icons/tag-svgrepo-com.svg'
 import IconAuthor from '../../public/icons/author-svgrepo-com.svg'
+import IconFavorite from '../../public/icons/favorite-filled-svgrepo-com.svg'
 import IconList from '../../public/icons/list-svgrepo-com.svg'
 import IconGrid from '../../public/icons/grid-svgrepo-com.svg'
 
@@ -167,6 +179,7 @@ const emit = defineEmits<{
 
 const searchValue = ref('')
 const showOnlyUnread = ref(false)
+const showOnlyFavorites = ref(false)
 const isListView = ref(localStorage.getItem('isListView') === 'true')
 const displayFilterRow = ref(false)
 
@@ -257,6 +270,11 @@ function toggleUnreadFilter() {
   emitFilter()
 }
 
+function toggleFavoriteFilter() {
+  showOnlyFavorites.value = !showOnlyFavorites.value
+  emitFilter()
+}
+
 function toggleListView() {
   isListView.value = !isListView.value
   localStorage.setItem('isListView', isListView.value.toString())
@@ -275,7 +293,10 @@ function emitFilter() {
     filter = `${filter} and authors:"=${selectedAuthor.value}"`
   }
   if (showOnlyUnread.value) {
-    filter = `${filter} and #fxtl_is_read:"no"`
+    filter = `${filter} and not #fxtl_status:"read"`
+  }
+  if (showOnlyFavorites.value) {
+    filter = `${filter} and #fxtl_status:"favorite"`
   }
   emit('filter', filter)
 }
@@ -346,14 +367,14 @@ onMounted(() => {
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(3, auto auto) 1fr;
+  grid-template-columns: repeat(4, auto auto) 1fr;
   padding: 0.5rem 0;
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 800px) {
   .filter-row {
     grid-template-columns: auto 1fr;
   }

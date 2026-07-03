@@ -8,7 +8,16 @@
   >
     <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
       {{
-        displayBookContextMenu.fxtl_is_read ? 'Mark as unread' : 'Mark as read'
+        displayBookContextMenu.fxtl_status.includes('read')
+          ? 'Mark as unread'
+          : 'Mark as read'
+      }}
+    </ContextMenuItem>
+    <ContextMenuItem @click="toggleIsFavorite()" :icon="IconFavorite">
+      {{
+        displayBookContextMenu.fxtl_status.includes('favorite')
+          ? 'Remove from favorite'
+          : 'Mark as favorite'
       }}
     </ContextMenuItem>
     <ContextMenuItem
@@ -64,6 +73,7 @@ import IconTrashBin from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg
 import ContextMenu from './components/ContextMenu.vue'
 import ContextMenuItem from './components/ContextMenuItem.vue'
 import IconBookRead from '../public/icons/eye-svgrepo-com.svg'
+import IconFavorite from '../public/icons/favorite-filled-svgrepo-com.svg'
 import { syncedUpdate } from './sync'
 
 const displayBookContextMenu = ref<any>(null)
@@ -71,12 +81,31 @@ const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 
 async function toggleIsRead() {
-  let new_value = !displayBookContextMenu.value.fxtl_is_read
-  displayBookContextMenu.value.fxtl_is_read = new_value
   const book = displayBookContextMenu.value
+  let isRead = book.fxtl_status.includes('read')
+  if (isRead) {
+    book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'read')
+  } else {
+    book.fxtl_status.push('read')
+  }
   displayBookContextMenu.value = null
   await saveToBookDb('books', toRaw(book), book.uuid)
-  syncedUpdate('update-read-status', book.uuid, { fxtl_is_read: new_value })
+  syncedUpdate('update-read-status', book.uuid, { fxtl_is_read: !isRead })
+}
+
+async function toggleIsFavorite() {
+  const book = displayBookContextMenu.value
+  let isFavorite = book.fxtl_status.includes('favorite')
+  if (isFavorite) {
+    book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'favorite')
+  } else {
+    book.fxtl_status.push('favorite')
+  }
+  displayBookContextMenu.value = null
+  await saveToBookDb('books', toRaw(book), book.uuid)
+  syncedUpdate('update-favorite-status', book.uuid, {
+    fxtl_status: isFavorite ? '' : 'favorite',
+  })
 }
 
 function openContextMenu(event: MouseEvent, book: any) {
@@ -119,10 +148,10 @@ async function loadOfflineBooks() {
       let al = Date.parse(a?.fxtl_progress_update) ?? 0
       let bl = Date.parse(b?.fxtl_progress_update) ?? 0
       if (LIST_SORT_UNREAD_BOOKS_FIRST) {
-        if (a.fxtl_is_read) {
+        if (a.fxtl_status.includes('read')) {
           al -= 100000000000
         }
-        if (b.fxtl_is_read) {
+        if (b.fxtl_status.includes('read')) {
           bl -= 100000000000
         }
       }

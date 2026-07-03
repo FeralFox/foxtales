@@ -58,7 +58,9 @@ const getRendition = async (val) => {
 
 async function onBtnNext() {
   if (isLastPage) {
-    book_metadata.value.fxtl_is_read = true
+    if (!book_metadata.value.fxtl_status.includes('read')) {
+      book_metadata.value.fxtl_status.push('read')
+    }
     await saveToBookDb(
       'books',
       toRaw(book_metadata.value),

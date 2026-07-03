@@ -253,7 +253,21 @@ def set_book_metadata(current_user: Annotated[ActiveUserData, Depends(get_curren
         current_user.library.set_custom_value(book_id, "fxtl_progress_update",
                                               data.update_data["fxtl_progress_update"].replace("Z", "+00:00"))
     elif data.update_type == "update-read-status":
-        current_user.library.set_custom_value(book_id, "fxtl_is_read", str(data.update_data["fxtl_is_read"]))
+        book = current_user.library.list_books(f"uuid:{data.book_uuid}")[0]
+        status = set(book.fxtl_status)
+        if data.update_data["fxtl_is_read"]:
+            status.add("read")
+        else:
+            status.discard("read")
+        current_user.library.set_custom_value(book_id, "fxtl_status", ",".join(sorted(list(status))))
+    elif data.update_type == "update-favorite-status":
+        book = current_user.library.list_books(f"uuid:{data.book_uuid}")[0]
+        status = set(book.fxtl_status)
+        if data.update_data["fxtl_status"] == "favorite":
+            status.add("favorite")
+        else:
+            status.discard("favorite")
+        current_user.library.set_custom_value(book_id, "fxtl_status", ",".join(sorted(list(status))))
     elif data.update_type == "update-annotations":
         data_path = current_user.library.get_book_path(data.book_uuid)
         annotations_path = data_path / "data" / "annotations.json"

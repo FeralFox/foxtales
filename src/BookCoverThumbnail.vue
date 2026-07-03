@@ -12,7 +12,12 @@
       }"
     >
       <div class="book-cover-toolbar" v-if="!isListView">
-        <div v-if="book!.fxtl_is_read" title="Book read"><IconBookRead /></div>
+        <div v-if="book!.fxtl_status.includes('read')" title="Book read">
+          <IconBookRead />
+        </div>
+        <div v-if="book!.fxtl_status.includes('favorite')" title="Favorite">
+          <IconFavorite />
+        </div>
         <div v-if="displayBookDownloadedIcon" title="Saved on device">
           <IconDownloadSmall />
         </div>
@@ -36,7 +41,12 @@
         {{ book!.tags.toString() }}
       </div>
       <div class="list-view-icons" v-if="isListView">
-        <div v-if="book!.fxtl_is_read" title="Book read"><IconBookRead /></div>
+        <div v-if="book!.fxtl_status.includes('read')" title="Book read">
+          <IconBookRead />
+        </div>
+        <div v-if="book!.fxtl_status.includes('favorite')" title="Favorite">
+          <IconFavorite />
+        </div>
         <div v-if="displayBookDownloadedIcon" title="Saved on device">
           <IconDownloadSmall />
         </div>
@@ -48,6 +58,7 @@
 <script setup lang="ts">
 import IconDownloadSmall from '../public/icons/download-small-svgrepo-com.svg'
 import IconBookRead from '../public/icons/eye-filled-svgrepo-com.svg'
+import IconFavorite from '../public/icons/favorite-filled-svgrepo-com.svg'
 import { computed } from 'vue'
 
 const props = defineProps({

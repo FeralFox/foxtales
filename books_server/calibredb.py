@@ -48,15 +48,23 @@ class CalibreListData:
     tags: list[str]
     timestamp: str
     fxtl_owner: str
-    fxtl_is_read: bool
     fxtl_progress: float
     fxtl_progress_update: str
+    fxtl_status: list[str]
 
     @classmethod
     def from_dict(cls, data: dict) -> "CalibreListData":
         # Calibre returns the full book path for local library. We only want to have the format.
         formats = [f.rsplit(".", 1)[-1] for f in data.get("formats", [])]
         book_uuid = data.get("uuid", "")
+        fxtl_status = data.get("*fxtl_status", [])
+        if isinstance(fxtl_status, str):
+            fxtl_status = [s.strip() for s in fxtl_status.split(",") if s.strip()]
+
+        fxtl_is_read = data.get("*fxtl_is_read", False)
+        if fxtl_is_read and "read" not in fxtl_status:
+            fxtl_status.append("read")
+
         return cls(
             id=data["id"],
             title=data.get("title", ""),
@@ -76,9 +84,9 @@ class CalibreListData:
             tags=data.get("tags", []),
             timestamp=data.get("timestamp", ""),
             fxtl_owner=data.get("*fxtl_owner", ""),
-            fxtl_is_read=data.get("*fxtl_is_read", False),
             fxtl_progress=data.get("*fxtl_progress", 0.0),
             fxtl_progress_update=data.get("*fxtl_progress_update", datetime.datetime.now().isoformat()),
+            fxtl_status=fxtl_status,
         )
 
 
@@ -172,13 +180,15 @@ class CalibreDb:
             self._add_custom_column("fxtl_is_read", "Is Read", "bool", False)
         if not "fxtl_tags" in columns.values():
             self._add_custom_column("fxtl_tags", "Tags", "text", True)
+        if not "fxtl_status" in columns.values():
+            self._add_custom_column("fxtl_status", "Status", "text", True)
 
     def _add_custom_column(self, name: str, display_name: str, datatype: str, is_multiple: bool):
         logging.info(f"Add custom column {name}")
-        is_multiple = []
+        cmd_args = []
         if is_multiple:
-            is_multiple = ["--is-multiple"]
-        self._call_calibre("add_custom_column", *is_multiple, name, display_name, datatype)
+            cmd_args = ["--is-multiple"]
+        self._call_calibre("add_custom_column", *cmd_args, name, display_name, datatype)
 
     def get_custom_columns(self) -> dict[int, str]:
         result = self._call_calibre('custom_columns')
@@ -240,8 +250,8 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_owner", self._user)
         self.set_custom_value(book_id, "fxtl_progress", "0")
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
-        self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "")
+        self.set_custom_value(book_id, "fxtl_status", "")
         self._book_cache.clear()
         return book_id
 
@@ -261,8 +271,8 @@ class CalibreDb:
         self.set_custom_value(book_id, "fxtl_owner", self._user)
         self.set_custom_value(book_id, "fxtl_progress", "0")
         self.set_custom_value(book_id, "fxtl_progress_update", datetime.datetime.now().isoformat())
-        self.set_custom_value(book_id, "fxtl_is_read", "False")
         self.set_custom_value(book_id, "fxtl_tags", "wishlist")
+        self.set_custom_value(book_id, "fxtl_status", "")
         if description:
             self.set_metadata(book_id, "comments", description)
         if date:

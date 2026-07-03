@@ -24,7 +24,19 @@
       :icon="IconBookRead"
     >
       {{
-        displayBookContextMenu!.fxtl_is_read ? 'Mark as unread' : 'Mark as read'
+        displayBookContextMenu!.fxtl_status.includes('read')
+          ? 'Mark as unread'
+          : 'Mark as read'
+      }}
+    </ContextMenuItem>
+    <ContextMenuItem
+      @click="toggleIsFavorite(displayBookContextMenu)"
+      :icon="IconFavorite"
+    >
+      {{
+        displayBookContextMenu!.fxtl_status.includes('favorite')
+          ? 'Remove from favorite'
+          : 'Mark as favorite'
       }}
     </ContextMenuItem>
     <ContextMenuItem
@@ -178,9 +190,31 @@
     >
     </SidebarButton>
     <SidebarButton
-      :icon="selectedBook.fxtl_is_read ? IconBookRead : IconBookUnread"
+      :icon="
+        selectedBook.fxtl_status.includes('read')
+          ? IconBookUnread
+          : IconBookRead
+      "
       @click="toggleIsRead(selectedBook)"
-      :title="selectedBook.fxtl_is_read ? 'Mark as unread' : 'Mark as read'"
+      :title="
+        selectedBook.fxtl_status.includes('read')
+          ? 'Mark as unread'
+          : 'Mark as read'
+      "
+    >
+    </SidebarButton>
+    <SidebarButton
+      :icon="
+        selectedBook.fxtl_status.includes('favorite')
+          ? IconFavorite
+          : IconFavoriteEmpty
+      "
+      @click="toggleIsFavorite(selectedBook)"
+      :title="
+        selectedBook.fxtl_status.includes('favorite')
+          ? 'Remove from favorite'
+          : 'Mark as favorite'
+      "
     >
     </SidebarButton>
     <SidebarButton
@@ -217,6 +251,8 @@ import IconRemove from '../public/icons/trash-bin-minimalistic-svgrepo-com.svg'
 import IconShowDetails from '../public/icons/details-svgrepo-com.svg'
 import IconBookRead from '../public/icons/eye-svgrepo-com.svg'
 import IconBookUnread from '../public/icons/eye-filled-svgrepo-com.svg'
+import IconFavoriteEmpty from '../public/icons/favorite-svgrepo-com.svg'
+import IconFavorite from '../public/icons/favorite-filled-svgrepo-com.svg'
 
 const bookContainer = useTemplateRef('book-container')
 const uploadBook = useTemplateRef('upload-book')
@@ -352,8 +388,12 @@ const bookIdPendingDelete = ref<string | null>(null)
 const isDeleting = ref(false)
 
 async function toggleIsRead(book) {
-  let new_value = !book.fxtl_is_read
-  book!.fxtl_is_read = new_value
+  let isRead = book.fxtl_status.includes('read')
+  if (isRead) {
+    book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'read')
+  } else {
+    book.fxtl_status.push('read')
+  }
   displayBookContextMenu.value = null
 
   if (await loadFromBookDb('books', book!.uuid, null)) {
@@ -363,7 +403,29 @@ async function toggleIsRead(book) {
   setTimeout(
     () =>
       syncedUpdate('update-read-status', book!.uuid, {
-        fxtl_is_read: new_value,
+        fxtl_is_read: !isRead,
+      }),
+    500,
+  )
+}
+
+async function toggleIsFavorite(book) {
+  let isFavorite = book.fxtl_status.includes('favorite')
+  if (isFavorite) {
+    book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'favorite')
+  } else {
+    book.fxtl_status.push('favorite')
+  }
+  displayBookContextMenu.value = null
+
+  if (await loadFromBookDb('books', book!.uuid, null)) {
+    await saveToBookDb('books', toRaw(book), book!.uuid)
+  }
+
+  setTimeout(
+    () =>
+      syncedUpdate('update-favorite-status', book!.uuid, {
+        fxtl_status: isFavorite ? '' : 'favorite',
       }),
     500,
   )

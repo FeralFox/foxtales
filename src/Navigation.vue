@@ -26,7 +26,7 @@ import { computed } from 'vue'
 import Logo from '../public/icons/logo_dark.svg'
 import BookStackIcon from '../public/icons/books-stack-svgrepo-com.svg'
 import ShelfIcon from '../public/icons/books-arranged-vertically-svgrepo-com.svg'
-import FavoritesIcon from '../public/icons/favorites-svgrepo-com.svg'
+import FavoritesIcon from '../public/icons/wishlist-svgrepo-com.svg'
 import ExploreIcon from '../public/icons/explore-svgrepo-com.svg'
 
 const props = defineProps(['active'])
