@@ -58,6 +58,9 @@ const getRendition = async (val) => {
 
 async function onBtnNext() {
   if (isLastPage) {
+    if (!book_metadata.value.fxtl_status) {
+      book_metadata.value.fxtl_status = []
+    }
     if (!book_metadata.value.fxtl_status.includes('read')) {
       book_metadata.value.fxtl_status.push('read')
     }

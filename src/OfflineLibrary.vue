@@ -8,6 +8,7 @@
   >
     <ContextMenuItem @click="toggleIsRead()" :icon="IconBookRead">
       {{
+        displayBookContextMenu.fxtl_status &&
         displayBookContextMenu.fxtl_status.includes('read')
           ? 'Mark as unread'
           : 'Mark as read'
@@ -15,6 +16,7 @@
     </ContextMenuItem>
     <ContextMenuItem @click="toggleIsFavorite()" :icon="IconFavorite">
       {{
+        displayBookContextMenu.fxtl_status &&
         displayBookContextMenu.fxtl_status.includes('favorite')
           ? 'Remove from favorite'
           : 'Mark as favorite'
@@ -82,6 +84,9 @@ const contextMenuY = ref(0)
 
 async function toggleIsRead() {
   const book = displayBookContextMenu.value
+  if (!book.fxtl_status) {
+    book.fxtl_status = []
+  }
   let isRead = book.fxtl_status.includes('read')
   if (isRead) {
     book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'read')
@@ -95,6 +100,9 @@ async function toggleIsRead() {
 
 async function toggleIsFavorite() {
   const book = displayBookContextMenu.value
+  if (!book.fxtl_status) {
+    book.fxtl_status = []
+  }
   let isFavorite = book.fxtl_status.includes('favorite')
   if (isFavorite) {
     book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'favorite')
@@ -148,10 +156,10 @@ async function loadOfflineBooks() {
       let al = Date.parse(a?.fxtl_progress_update) ?? 0
       let bl = Date.parse(b?.fxtl_progress_update) ?? 0
       if (LIST_SORT_UNREAD_BOOKS_FIRST) {
-        if (a.fxtl_status.includes('read')) {
+        if (a.fxtl_status && a.fxtl_status.includes('read')) {
           al -= 100000000000
         }
-        if (b.fxtl_status.includes('read')) {
+        if (b.fxtl_status && b.fxtl_status.includes('read')) {
           bl -= 100000000000
         }
       }

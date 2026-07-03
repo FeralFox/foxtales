@@ -24,6 +24,7 @@
       :icon="IconBookRead"
     >
       {{
+        displayBookContextMenu!.fxtl_status &&
         displayBookContextMenu!.fxtl_status.includes('read')
           ? 'Mark as unread'
           : 'Mark as read'
@@ -34,6 +35,7 @@
       :icon="IconFavorite"
     >
       {{
+        displayBookContextMenu!.fxtl_status &&
         displayBookContextMenu!.fxtl_status.includes('favorite')
           ? 'Remove from favorite'
           : 'Mark as favorite'
@@ -191,13 +193,13 @@
     </SidebarButton>
     <SidebarButton
       :icon="
-        selectedBook.fxtl_status.includes('read')
+        selectedBook.fxtl_status && selectedBook.fxtl_status.includes('read')
           ? IconBookUnread
           : IconBookRead
       "
       @click="toggleIsRead(selectedBook)"
       :title="
-        selectedBook.fxtl_status.includes('read')
+        selectedBook.fxtl_status && selectedBook.fxtl_status.includes('read')
           ? 'Mark as unread'
           : 'Mark as read'
       "
@@ -205,12 +207,14 @@
     </SidebarButton>
     <SidebarButton
       :icon="
+        selectedBook.fxtl_status &&
         selectedBook.fxtl_status.includes('favorite')
           ? IconFavorite
           : IconFavoriteEmpty
       "
       @click="toggleIsFavorite(selectedBook)"
       :title="
+        selectedBook.fxtl_status &&
         selectedBook.fxtl_status.includes('favorite')
           ? 'Remove from favorite'
           : 'Mark as favorite'
@@ -388,6 +392,9 @@ const bookIdPendingDelete = ref<string | null>(null)
 const isDeleting = ref(false)
 
 async function toggleIsRead(book) {
+  if (!book.fxtl_status) {
+    book.fxtl_status = []
+  }
   let isRead = book.fxtl_status.includes('read')
   if (isRead) {
     book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'read')
@@ -410,6 +417,9 @@ async function toggleIsRead(book) {
 }
 
 async function toggleIsFavorite(book) {
+  if (!book.fxtl_status) {
+    book.fxtl_status = []
+  }
   let isFavorite = book.fxtl_status.includes('favorite')
   if (isFavorite) {
     book.fxtl_status = book.fxtl_status.filter((s: string) => s !== 'favorite')

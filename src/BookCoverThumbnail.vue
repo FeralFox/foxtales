@@ -12,10 +12,16 @@
       }"
     >
       <div class="book-cover-toolbar" v-if="!isListView">
-        <div v-if="book!.fxtl_status.includes('read')" title="Book read">
+        <div
+          v-if="book!.fxtl_status && book!.fxtl_status.includes('read')"
+          title="Book read"
+        >
           <IconBookRead />
         </div>
-        <div v-if="book!.fxtl_status.includes('favorite')" title="Favorite">
+        <div
+          v-if="book!.fxtl_status && book!.fxtl_status.includes('favorite')"
+          title="Favorite"
+        >
           <IconFavorite />
         </div>
         <div v-if="displayBookDownloadedIcon" title="Saved on device">
@@ -41,10 +47,16 @@
         {{ book!.tags.toString() }}
       </div>
       <div class="list-view-icons" v-if="isListView">
-        <div v-if="book!.fxtl_status.includes('read')" title="Book read">
+        <div
+          v-if="book!.fxtl_status && book!.fxtl_status.includes('read')"
+          title="Book read"
+        >
           <IconBookRead />
         </div>
-        <div v-if="book!.fxtl_status.includes('favorite')" title="Favorite">
+        <div
+          v-if="book!.fxtl_status && book!.fxtl_status.includes('favorite')"
+          title="Favorite"
+        >
           <IconFavorite />
         </div>
         <div v-if="displayBookDownloadedIcon" title="Saved on device">
